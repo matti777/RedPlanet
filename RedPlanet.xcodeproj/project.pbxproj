@@ -1,0 +1,528 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		4967118E2B77884800F3337E /* RealityKitContent in Frameworks */ = {isa = PBXBuildFile; productRef = 4967118D2B77884800F3337E /* RealityKitContent */; };
+		496711902B77884800F3337E /* RedPlanetApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4967118F2B77884800F3337E /* RedPlanetApp.swift */; };
+		496711982B77884900F3337E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 496711972B77884900F3337E /* Assets.xcassets */; };
+		4967119B2B77884900F3337E /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 4967119A2B77884900F3337E /* Preview Assets.xcassets */; };
+		496711A62B77884900F3337E /* RedPlanetTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 496711A52B77884900F3337E /* RedPlanetTests.swift */; };
+		496711B12B7788CB00F3337E /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 496711B02B7788CB00F3337E /* MainView.swift */; };
+		496711B52B7788F900F3337E /* HeightMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = 496711B42B7788F900F3337E /* HeightMap.swift */; };
+		496711B72B77890300F3337E /* MeshDescriptorExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 496711B62B77890300F3337E /* MeshDescriptorExtensions.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		496711A22B77884900F3337E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 496711802B77884800F3337E /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 496711872B77884800F3337E;
+			remoteInfo = RedPlanet;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		496711882B77884800F3337E /* RedPlanet.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RedPlanet.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4967118C2B77884800F3337E /* RealityKitContent */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = RealityKitContent; sourceTree = "<group>"; };
+		4967118F2B77884800F3337E /* RedPlanetApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RedPlanetApp.swift; sourceTree = "<group>"; };
+		496711972B77884900F3337E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		4967119A2B77884900F3337E /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		4967119C2B77884900F3337E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		496711A12B77884900F3337E /* RedPlanetTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RedPlanetTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		496711A52B77884900F3337E /* RedPlanetTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RedPlanetTests.swift; sourceTree = "<group>"; };
+		496711B02B7788CB00F3337E /* MainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainView.swift; sourceTree = "<group>"; };
+		496711B42B7788F900F3337E /* HeightMap.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = HeightMap.swift; sourceTree = "<group>"; };
+		496711B62B77890300F3337E /* MeshDescriptorExtensions.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MeshDescriptorExtensions.swift; sourceTree = "<group>"; };
+		496711B82B77B56200F3337E /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = SOURCE_ROOT; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		496711852B77884800F3337E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4967118E2B77884800F3337E /* RealityKitContent in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4967119E2B77884900F3337E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		4967117F2B77884800F3337E = {
+			isa = PBXGroup;
+			children = (
+				4967118A2B77884800F3337E /* RedPlanet */,
+				4967118B2B77884800F3337E /* Packages */,
+				496711A42B77884900F3337E /* RedPlanetTests */,
+				496711892B77884800F3337E /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		496711892B77884800F3337E /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				496711882B77884800F3337E /* RedPlanet.app */,
+				496711A12B77884900F3337E /* RedPlanetTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		4967118A2B77884800F3337E /* RedPlanet */ = {
+			isa = PBXGroup;
+			children = (
+				496711B82B77B56200F3337E /* README.md */,
+				4967118F2B77884800F3337E /* RedPlanetApp.swift */,
+				496711AF2B7788B800F3337E /* Views */,
+				496711B22B7788E600F3337E /* Models */,
+				496711B32B7788EB00F3337E /* Extensions */,
+				496711972B77884900F3337E /* Assets.xcassets */,
+				4967119C2B77884900F3337E /* Info.plist */,
+				496711992B77884900F3337E /* Preview Content */,
+			);
+			path = RedPlanet;
+			sourceTree = "<group>";
+		};
+		4967118B2B77884800F3337E /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				4967118C2B77884800F3337E /* RealityKitContent */,
+			);
+			path = Packages;
+			sourceTree = "<group>";
+		};
+		496711992B77884900F3337E /* Preview Content */ = {
+			isa = PBXGroup;
+			children = (
+				4967119A2B77884900F3337E /* Preview Assets.xcassets */,
+			);
+			path = "Preview Content";
+			sourceTree = "<group>";
+		};
+		496711A42B77884900F3337E /* RedPlanetTests */ = {
+			isa = PBXGroup;
+			children = (
+				496711A52B77884900F3337E /* RedPlanetTests.swift */,
+			);
+			path = RedPlanetTests;
+			sourceTree = "<group>";
+		};
+		496711AF2B7788B800F3337E /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				496711B02B7788CB00F3337E /* MainView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		496711B22B7788E600F3337E /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				496711B42B7788F900F3337E /* HeightMap.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		496711B32B7788EB00F3337E /* Extensions */ = {
+			isa = PBXGroup;
+			children = (
+				496711B62B77890300F3337E /* MeshDescriptorExtensions.swift */,
+			);
+			path = Extensions;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		496711872B77884800F3337E /* RedPlanet */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 496711A92B77884900F3337E /* Build configuration list for PBXNativeTarget "RedPlanet" */;
+			buildPhases = (
+				496711842B77884800F3337E /* Sources */,
+				496711852B77884800F3337E /* Frameworks */,
+				496711862B77884800F3337E /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = RedPlanet;
+			packageProductDependencies = (
+				4967118D2B77884800F3337E /* RealityKitContent */,
+			);
+			productName = RedPlanet;
+			productReference = 496711882B77884800F3337E /* RedPlanet.app */;
+			productType = "com.apple.product-type.application";
+		};
+		496711A02B77884900F3337E /* RedPlanetTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 496711AC2B77884900F3337E /* Build configuration list for PBXNativeTarget "RedPlanetTests" */;
+			buildPhases = (
+				4967119D2B77884900F3337E /* Sources */,
+				4967119E2B77884900F3337E /* Frameworks */,
+				4967119F2B77884900F3337E /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				496711A32B77884900F3337E /* PBXTargetDependency */,
+			);
+			name = RedPlanetTests;
+			productName = RedPlanetTests;
+			productReference = 496711A12B77884900F3337E /* RedPlanetTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		496711802B77884800F3337E /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1530;
+				LastUpgradeCheck = 1530;
+				TargetAttributes = {
+					496711872B77884800F3337E = {
+						CreatedOnToolsVersion = 15.3;
+					};
+					496711A02B77884900F3337E = {
+						CreatedOnToolsVersion = 15.3;
+						TestTargetID = 496711872B77884800F3337E;
+					};
+				};
+			};
+			buildConfigurationList = 496711832B77884800F3337E /* Build configuration list for PBXProject "RedPlanet" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 4967117F2B77884800F3337E;
+			productRefGroup = 496711892B77884800F3337E /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				496711872B77884800F3337E /* RedPlanet */,
+				496711A02B77884900F3337E /* RedPlanetTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		496711862B77884800F3337E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				496711982B77884900F3337E /* Assets.xcassets in Resources */,
+				4967119B2B77884900F3337E /* Preview Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4967119F2B77884900F3337E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		496711842B77884800F3337E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				496711902B77884800F3337E /* RedPlanetApp.swift in Sources */,
+				496711B72B77890300F3337E /* MeshDescriptorExtensions.swift in Sources */,
+				496711B52B7788F900F3337E /* HeightMap.swift in Sources */,
+				496711B12B7788CB00F3337E /* MainView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4967119D2B77884900F3337E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				496711A62B77884900F3337E /* RedPlanetTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		496711A32B77884900F3337E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 496711872B77884800F3337E /* RedPlanet */;
+			targetProxy = 496711A22B77884900F3337E /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		496711A72B77884900F3337E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = xros;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				XROS_DEPLOYMENT_TARGET = 1.0;
+			};
+			name = Debug;
+		};
+		496711A82B77884900F3337E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = xros;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+				XROS_DEPLOYMENT_TARGET = 1.0;
+			};
+			name = Release;
+		};
+		496711AA2B77884900F3337E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"RedPlanet/Preview Content\"";
+				DEVELOPMENT_TEAM = 2RLYKMD3U8;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "$(TARGET_NAME)/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = fi.qvik.RedPlanet;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "xros xrsimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+			};
+			name = Debug;
+		};
+		496711AB2B77884900F3337E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"RedPlanet/Preview Content\"";
+				DEVELOPMENT_TEAM = 2RLYKMD3U8;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "$(TARGET_NAME)/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = fi.qvik.RedPlanet;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "xros xrsimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+			};
+			name = Release;
+		};
+		496711AD2B77884900F3337E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2RLYKMD3U8;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = fi.qvik.RedPlanetTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "xros xrsimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/RedPlanet.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/RedPlanet";
+				XROS_DEPLOYMENT_TARGET = 1.0;
+			};
+			name = Debug;
+		};
+		496711AE2B77884900F3337E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2RLYKMD3U8;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = fi.qvik.RedPlanetTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "xros xrsimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/RedPlanet.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/RedPlanet";
+				XROS_DEPLOYMENT_TARGET = 1.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		496711832B77884800F3337E /* Build configuration list for PBXProject "RedPlanet" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				496711A72B77884900F3337E /* Debug */,
+				496711A82B77884900F3337E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		496711A92B77884900F3337E /* Build configuration list for PBXNativeTarget "RedPlanet" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				496711AA2B77884900F3337E /* Debug */,
+				496711AB2B77884900F3337E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		496711AC2B77884900F3337E /* Build configuration list for PBXNativeTarget "RedPlanetTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				496711AD2B77884900F3337E /* Debug */,
+				496711AE2B77884900F3337E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		4967118D2B77884800F3337E /* RealityKitContent */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = RealityKitContent;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 496711802B77884800F3337E /* Project object */;
+}
