@@ -193,21 +193,19 @@ final class HeightMap {
         
         return UIImage(cgImage: cgImage)
     }
-    /*
-    func getSurfaceNormal(_ a: SIMD3<Float>, _ b: SIMD3<Float>, _ c: SIMD3<Float>) -> GLKVector3 {
-        let vectorA = GLKVector3Make(a.x, a.y, a.z)
-        let vectorB = GLKVector3Make(b.x, b.y, b.z)
-        let vectorC = GLKVector3Make(c.x, c.y, c.z)
-        let AB = GLKVector3Subtract(vectorB, vectorA)
-        let BC = GLKVector3Subtract(vectorC, vectorB)
-        let crossProduct = GLKVector3CrossProduct(BC, AB)
-        let normal = GLKVector3Normalize(crossProduct)
-        return normal
+
+    private func calculateFaceNormal(positions: [SIMD3<Float>], triangleIndices: [UInt32]) -> SIMD3<Float> {
+        // Calculate vectors representing two edges of the face
+        let v1 = positions[Int(triangleIndices[1])] - positions[Int(triangleIndices[0])]
+        let v2 = positions[Int(triangleIndices[2])] - positions[Int(triangleIndices[0])]
+
+        // Calculate the cross product to get the face normal
+        return normalize(cross(v1, v2))
     }
-    */
+    
     /// Creates a RealityKit entity from the heightmap, in the XZ plane where the heightmap values will be
     /// used for the Y coordinate.
-    func createEntity(zxScale: Float, yScale: Float) -> Entity {
+    func createEntity(zxScale: Float, yScale: Float) throws -> Entity {
         let startTime = CFAbsoluteTimeGetCurrent()
         defer {
             print("createEntity() took \(CFAbsoluteTimeGetCurrent() - startTime)")
@@ -235,29 +233,36 @@ final class HeightMap {
         }
         
         var indices = [UInt32]()
-        
-        // Create vertex indices
+        var normals = [SIMD3<Float>]()
+
+        // Create vertex indices and face normals
         for y in stride(from: 0, to: mapSize - 1, by: 1) {
             for x in stride(from: 0, to: mapSize - 1, by: 1) {
                 // Create 2 triangles per iteration, in counter clockwise vertex order
-                indices += [
+                let tri1 = [
                     UInt32(y * mapSize + x),
                     UInt32((y + 1) * mapSize + x),
                     UInt32(y * mapSize + (x + 1)),
-                    
+                ]
+                let tri2 = [
                     UInt32((y + 1) * mapSize + x),
                     UInt32((y + 1) * mapSize + (x + 1)),
                     UInt32(y * mapSize + (x + 1))
                 ]
+                indices.append(contentsOf: tri1)
+                indices.append(contentsOf: tri2)
+
+                normals.append(calculateFaceNormal(positions: positions, triangleIndices: tri1))
+                normals.append(calculateFaceNormal(positions: positions, triangleIndices: tri2))
             }
         }
         
-        var normals = [SIMD3<Float>]()
-
-        // Create vertex normals
+        
 
         // TODO
         let entity = Entity()
+        entity.components.set(ModelComponent(mesh: try .generateFrom(positions: positions, normals: normals, uvs: nil, indices: indices), materials: [SimpleMaterial()]))
+
         entity.components[ModelDebugOptionsComponent.self] = ModelDebugOptionsComponent(visualizationMode: .normal)
         
         return entity

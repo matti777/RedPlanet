@@ -14,7 +14,7 @@
 		496711A62B77884900F3337E /* RedPlanetTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 496711A52B77884900F3337E /* RedPlanetTests.swift */; };
 		496711B12B7788CB00F3337E /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 496711B02B7788CB00F3337E /* MainView.swift */; };
 		496711B52B7788F900F3337E /* HeightMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = 496711B42B7788F900F3337E /* HeightMap.swift */; };
-		496711B72B77890300F3337E /* MeshDescriptorExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 496711B62B77890300F3337E /* MeshDescriptorExtensions.swift */; };
+		496711B72B77890300F3337E /* MeshResourceExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 496711B62B77890300F3337E /* MeshResourceExtensions.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -38,7 +38,7 @@
 		496711A52B77884900F3337E /* RedPlanetTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RedPlanetTests.swift; sourceTree = "<group>"; };
 		496711B02B7788CB00F3337E /* MainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainView.swift; sourceTree = "<group>"; };
 		496711B42B7788F900F3337E /* HeightMap.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = HeightMap.swift; sourceTree = "<group>"; };
-		496711B62B77890300F3337E /* MeshDescriptorExtensions.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MeshDescriptorExtensions.swift; sourceTree = "<group>"; };
+		496711B62B77890300F3337E /* MeshResourceExtensions.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MeshResourceExtensions.swift; sourceTree = "<group>"; };
 		496711B82B77B56200F3337E /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
@@ -138,7 +138,7 @@
 		496711B32B7788EB00F3337E /* Extensions */ = {
 			isa = PBXGroup;
 			children = (
-				496711B62B77890300F3337E /* MeshDescriptorExtensions.swift */,
+				496711B62B77890300F3337E /* MeshResourceExtensions.swift */,
 			);
 			path = Extensions;
 			sourceTree = "<group>";
@@ -247,7 +247,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				496711902B77884800F3337E /* RedPlanetApp.swift in Sources */,
-				496711B72B77890300F3337E /* MeshDescriptorExtensions.swift in Sources */,
+				496711B72B77890300F3337E /* MeshResourceExtensions.swift in Sources */,
 				496711B52B7788F900F3337E /* HeightMap.swift in Sources */,
 				496711B12B7788CB00F3337E /* MainView.swift in Sources */,
 			);
