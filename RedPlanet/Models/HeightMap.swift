@@ -20,6 +20,9 @@ final class HeightMap {
     private let mapSize: Int
     private let roughness: Float
     
+    private var minValue: Float = 0.0
+    private var maxValue: Float = 0.0
+
     enum Error: Swift.Error {
         case invalidArgument(message: String)
         case bitmapCreationFailed
@@ -161,8 +164,8 @@ final class HeightMap {
             throw HeightMap.Error.bitmapCreationFailed
         }
 
-        let minValue = values.min()!
-        let maxValue = values.max()!
+        self.minValue = values.min()!
+        self.maxValue = values.max()!
         let valueRange = maxValue - minValue
         
         print("minValue = \(minValue) maxValue = \(maxValue) valueRange = \(valueRange)")
@@ -194,7 +197,9 @@ final class HeightMap {
         return UIImage(cgImage: cgImage)
     }
 
-    private func calculateFaceNormal(positions: [SIMD3<Float>], triangleIndices: [UInt32]) -> SIMD3<Float> {
+    private func calculateFaceNormal(positions: [SIMD3<Float>], triangleIndices: ArraySlice<UInt32>) -> SIMD3<Float> {
+        assert(triangleIndices.count == 3, "indices array size must be 3")
+        
         // Calculate vectors representing two edges of the face
         let v1 = positions[Int(triangleIndices[1])] - positions[Int(triangleIndices[0])]
         let v2 = positions[Int(triangleIndices[2])] - positions[Int(triangleIndices[0])]
@@ -205,66 +210,127 @@ final class HeightMap {
     
     /// Creates a RealityKit entity from the heightmap, in the XZ plane where the heightmap values will be
     /// used for the Y coordinate.
-    func createEntity(zxScale: Float, yScale: Float) throws -> Entity {
+    ///
+    /// The geometry is created like so - from "back" (negatize Z) to "front", left to right:
+    ///
+    /// +------+------+
+    /// |0   / |1   / |2
+    /// |  /   |  /   |
+    /// |/     |/     |
+    /// +------+------+
+    /// |3   / |4   / |5
+    /// |  /   |  /   |
+    /// |/     |/     |
+    /// +------+------+
+    ///
+    /// - Parameters:
+    ///   - xzScale: Distance (in meters) between vertices in the ZX plane. Supplyinh xzScale: 1.0 would
+    ///              mean a distance of 1.0 meters between heightmap value points in the landscape's XZ plane.
+    ///   - yScale: Distance (in meters) between value points in the Y direction. This determines the height at each
+    ///             heightmap value (vertex). The final height (Y value) at a vertex is determined by
+    ///             multiplying the normalized heightmap value by this parameter. Thus supplying yScale: 10.0 would result
+    ///             in a landscape where the height difference between the lowest and the highest point
+    ///             would be 10 meters.
+    func createEntity(xzScale: Float, yScale: Float) throws -> Entity {
         let startTime = CFAbsoluteTimeGetCurrent()
         defer {
             print("createEntity() took \(CFAbsoluteTimeGetCurrent() - startTime)")
         }
 
-        print("Will generate \(mapSize * mapSize * 2) polygons")
+        let numVertices = mapSize * mapSize
+        let numFaces = (mapSize - 1) * (mapSize - 1) * 2
+        let numIndices = numFaces * 3
+        print("Will generate: \(numVertices) vertices, \(numFaces) faces, \(numIndices) indices.")
 
-        let minValue = values.min()!
-        let normalizationScaler = 1 / (values.max()! - minValue)
+        let normalizationScaler = 1.0 / (maxValue - minValue)
 
-        var positions = [SIMD3<Float>]()
-
-        var zoffset = Float(-(mapSize / 2)) * zxScale
+        // This will store our vertex positions (coordinates)
+        var positions: [SIMD3<Float>] = Array.init(repeating: SIMD3<Float>(), count: numVertices)
+        var positionIndex = 0
+        
+        var zoffset = Float(-(mapSize / 2)) * xzScale
         
         // Create vertex positions
         for y in stride(from: 0, to: mapSize, by: 1) {
-            var xoffset = Float(-(mapSize / 2)) * zxScale
+            var xoffset = Float(-(mapSize / 2)) * xzScale
         
             for x in stride(from: 0, to: mapSize, by: 1) {
-                let normalizedValue = (self[x, y] - minValue) * normalizationScaler
-                positions.append([xoffset, normalizedValue * yScale, zoffset])
-                xoffset += zxScale
+                let normalizedValue = self[x, y] * normalizationScaler
+                positions[positionIndex] = ([xoffset, normalizedValue * yScale, zoffset])
+                positionIndex += 1
+                xoffset += xzScale
             }
-            zoffset += zxScale
+            zoffset += xzScale
         }
         
-        var indices = [UInt32]()
-        var normals = [SIMD3<Float>]()
+        print("vertex position generation took \(CFAbsoluteTimeGetCurrent() - startTime)")
 
-        // Create vertex indices and face normals
+        let startTime2 = CFAbsoluteTimeGetCurrent()
+        
+        // This will contain the vertex indices for all the triangles in the mesh
+        var indices: [UInt32] = Array.init(repeating: 0, count: numIndices)
+
+        // This is used to store normals of all faces to which a given vertex belongs. Once
+        // all normals for all vertices have been gathered, they will be summed up and normalized to form
+        // a smoothed vertex normal.
+        var normalsPerVertex = [[SIMD3<Float>]]()
+        normalsPerVertex.reserveCapacity(numVertices)
+        for vertexIndex in stride(from: 0, to: numVertices, by: 1) {
+            normalsPerVertex[vertexIndex] = [SIMD3<Float>]()
+        }
+
+        var indicesIndex = 0
+        
+        // Create vertex indices and face normals. Create 2 triangles per iteration,
+        // in counterclockwise vertex order.
         for y in stride(from: 0, to: mapSize - 1, by: 1) {
             for x in stride(from: 0, to: mapSize - 1, by: 1) {
-                // Create 2 triangles per iteration, in counter clockwise vertex order
-                let tri1 = [
-                    UInt32(y * mapSize + x),
-                    UInt32((y + 1) * mapSize + x),
-                    UInt32(y * mapSize + (x + 1)),
-                ]
-                let tri2 = [
-                    UInt32((y + 1) * mapSize + x),
-                    UInt32((y + 1) * mapSize + (x + 1)),
-                    UInt32(y * mapSize + (x + 1))
-                ]
-                indices.append(contentsOf: tri1)
-                indices.append(contentsOf: tri2)
+                // Triangle one is the "upper left corner"
+                indices[indicesIndex] = UInt32(y * mapSize + x)
+                indices[indicesIndex + 1] = UInt32((y + 1) * mapSize + x)
+                indices[indicesIndex + 2] = UInt32(y * mapSize + (x + 1))
 
-                normals.append(calculateFaceNormal(positions: positions, triangleIndices: tri1))
-                normals.append(calculateFaceNormal(positions: positions, triangleIndices: tri2))
+                let faceNormal1 = calculateFaceNormal(positions: positions, triangleIndices: indices[indicesIndex..<(indicesIndex + 3)])
+                
+                // Add the face normal to every vertex in the triangle
+                normalsPerVertex[indicesIndex].append(faceNormal1)
+                normalsPerVertex[indicesIndex + 1].append(faceNormal1)
+                normalsPerVertex[indicesIndex + 2].append(faceNormal1)
+
+                indicesIndex += 3
+                
+                // Triangle two is the "lower left corner"
+                indices[indicesIndex] = UInt32((y + 1) * mapSize + x)
+                indices[indicesIndex + 1] = UInt32((y + 1) * mapSize + (x + 1))
+                indices[indicesIndex + 2] = UInt32(y * mapSize + (x + 1))
+                
+                let faceNormal2 = calculateFaceNormal(positions: positions, triangleIndices: indices[indicesIndex..<(indicesIndex + 3)])
+
+                // Add the face normal to every vertex in the triangle
+                normalsPerVertex[indicesIndex].append(faceNormal2)
+                normalsPerVertex[indicesIndex + 1].append(faceNormal2)
+                normalsPerVertex[indicesIndex + 2].append(faceNormal2)
+                
+                indicesIndex += 3
             }
         }
         
+        // Create smoothed vertex normals by adding all the face normals at each vertex together and normalizing the result
+        let vertexNormals = normalsPerVertex.map { normalize($0.reduce(SIMD3<Float>(), +)) }
+        assert(vertexNormals.count == numVertices, "invalid number of vertex normals generated")
         
+        print("indices / normals generation took \(CFAbsoluteTimeGetCurrent() - startTime2)")
 
-        // TODO
+        let startTime3 = CFAbsoluteTimeGetCurrent()
+
         let entity = Entity()
-        entity.components.set(ModelComponent(mesh: try .generateFrom(positions: positions, normals: normals, uvs: nil, indices: indices), materials: [SimpleMaterial()]))
+        entity.components.set(ModelComponent(mesh: try .generateFrom(positions: positions, normals: vertexNormals, uvs: nil, indices: indices), materials: [SimpleMaterial()]))
 
+        // TODO remove debug stuff
         entity.components[ModelDebugOptionsComponent.self] = ModelDebugOptionsComponent(visualizationMode: .normal)
-        
+
+        print("entity creation took \(CFAbsoluteTimeGetCurrent() - startTime3)")
+
         return entity
     }
     
