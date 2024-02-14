@@ -61,6 +61,9 @@ final class HeightMap {
             try diamondSquare(x: 0, y: 0, tileSize: tileSize)
             tileSize /= 2
         }
+        
+        self.minValue = values.min()!
+        self.maxValue = values.max()!
     }
 
     /// Returns a value at [x, y]. No bounds checking.
@@ -164,10 +167,7 @@ final class HeightMap {
             throw HeightMap.Error.bitmapCreationFailed
         }
 
-        self.minValue = values.min()!
-        self.maxValue = values.max()!
         let valueRange = maxValue - minValue
-        
         print("minValue = \(minValue) maxValue = \(maxValue) valueRange = \(valueRange)")
         
         var pixelData = [UInt8](repeating: 0, count: values.count * 4)
@@ -197,12 +197,12 @@ final class HeightMap {
         return UIImage(cgImage: cgImage)
     }
 
-    private func calculateFaceNormal(positions: [SIMD3<Float>], triangleIndices: ArraySlice<UInt32>) -> SIMD3<Float> {
+    private func calculateFaceNormal(positions: [SIMD3<Float>], triangleIndices: [Int]) -> SIMD3<Float> {
         assert(triangleIndices.count == 3, "indices array size must be 3")
         
         // Calculate vectors representing two edges of the face
-        let v1 = positions[Int(triangleIndices[1])] - positions[Int(triangleIndices[0])]
-        let v2 = positions[Int(triangleIndices[2])] - positions[Int(triangleIndices[0])]
+        let v1 = positions[triangleIndices[1]] - positions[triangleIndices[0]]
+        let v2 = positions[triangleIndices[2]] - positions[triangleIndices[0]]
 
         // Calculate the cross product to get the face normal
         return normalize(cross(v1, v2))
@@ -248,11 +248,12 @@ final class HeightMap {
         var positions: [SIMD3<Float>] = Array.init(repeating: SIMD3<Float>(), count: numVertices)
         var positionIndex = 0
         
-        var zoffset = Float(-(mapSize / 2)) * xzScale
+        var zoffset = -((Float((mapSize / 2)) * xzScale) + (xzScale * 0.5))
+        print("Will generate geometry in XZ plane [\(zoffset)..\(-zoffset)] and Y direction [\(minValue * yScale)..\(maxValue * yScale)]")
         
         // Create vertex positions
         for y in stride(from: 0, to: mapSize, by: 1) {
-            var xoffset = Float(-(mapSize / 2)) * xzScale
+            var xoffset = -((Float((mapSize / 2)) * xzScale) + (xzScale * 0.5))
         
             for x in stride(from: 0, to: mapSize, by: 1) {
                 let normalizedValue = self[x, y] * normalizationScaler
@@ -273,8 +274,8 @@ final class HeightMap {
         // This is used to store normals of all faces to which a given vertex belongs. Once
         // all normals for all vertices have been gathered, they will be summed up and normalized to form
         // a smoothed vertex normal.
-        var normalsPerVertex = [[SIMD3<Float>]]()
-        normalsPerVertex.reserveCapacity(numVertices)
+        var normalsPerVertex: [[SIMD3<Float>]] = Array.init(repeating: [SIMD3<Float>](), count: numVertices)
+//        normalsPerVertex.reserveCapacity(numVertices)
         for vertexIndex in stride(from: 0, to: numVertices, by: 1) {
             normalsPerVertex[vertexIndex] = [SIMD3<Float>]()
         }
@@ -286,32 +287,36 @@ final class HeightMap {
         for y in stride(from: 0, to: mapSize - 1, by: 1) {
             for x in stride(from: 0, to: mapSize - 1, by: 1) {
                 // Triangle one is the "upper left corner"
-                indices[indicesIndex] = UInt32(y * mapSize + x)
-                indices[indicesIndex + 1] = UInt32((y + 1) * mapSize + x)
-                indices[indicesIndex + 2] = UInt32(y * mapSize + (x + 1))
+                let i0 = y * mapSize + x
+                let i1 = (y + 1) * mapSize + x
+                let i2 = y * mapSize + (x + 1)
+                indices[indicesIndex] = UInt32(i0)
+                indices[indicesIndex + 1] = UInt32(i1)
+                indices[indicesIndex + 2] = UInt32(i2)
+                indicesIndex += 3
 
-                let faceNormal1 = calculateFaceNormal(positions: positions, triangleIndices: indices[indicesIndex..<(indicesIndex + 3)])
+                let faceNormal1 = calculateFaceNormal(positions: positions, triangleIndices: [i0, i1, i2])
                 
                 // Add the face normal to every vertex in the triangle
-                normalsPerVertex[indicesIndex].append(faceNormal1)
-                normalsPerVertex[indicesIndex + 1].append(faceNormal1)
-                normalsPerVertex[indicesIndex + 2].append(faceNormal1)
+                normalsPerVertex[i0].append(faceNormal1)
+                normalsPerVertex[i1].append(faceNormal1)
+                normalsPerVertex[i2].append(faceNormal1)
 
-                indicesIndex += 3
-                
                 // Triangle two is the "lower left corner"
-                indices[indicesIndex] = UInt32((y + 1) * mapSize + x)
-                indices[indicesIndex + 1] = UInt32((y + 1) * mapSize + (x + 1))
-                indices[indicesIndex + 2] = UInt32(y * mapSize + (x + 1))
-                
-                let faceNormal2 = calculateFaceNormal(positions: positions, triangleIndices: indices[indicesIndex..<(indicesIndex + 3)])
+                let i3 = (y + 1) * mapSize + x
+                let i4 = (y + 1) * mapSize + (x + 1)
+                let i5 = y * mapSize + (x + 1)
+                indices[indicesIndex] = UInt32(i3)
+                indices[indicesIndex + 1] = UInt32(i4)
+                indices[indicesIndex + 2] = UInt32(i5)
+                indicesIndex += 3
+
+                let faceNormal2 = calculateFaceNormal(positions: positions, triangleIndices: [i3, i4, i5])
 
                 // Add the face normal to every vertex in the triangle
-                normalsPerVertex[indicesIndex].append(faceNormal2)
-                normalsPerVertex[indicesIndex + 1].append(faceNormal2)
-                normalsPerVertex[indicesIndex + 2].append(faceNormal2)
-                
-                indicesIndex += 3
+                normalsPerVertex[i3].append(faceNormal2)
+                normalsPerVertex[i4].append(faceNormal2)
+                normalsPerVertex[i5].append(faceNormal2)
             }
         }
         

@@ -9,17 +9,22 @@ import SwiftUI
 import RealityKit
 
 struct MainView: View {
-    private let heightMapSize = 4097
+    private let heightMapSize = 5 // 4097
     private let heightMapRoughness: Float = 0.1
-    
+    private let heightMapXZScale: Float = 0.5
+    private let heightMapYScale: Float = 0.5
+
     var body: some View {
         RealityView { content in
             content.add(createSkySphere())
             
             let heightMap = try! HeightMap(size: heightMapSize, roughness: heightMapRoughness)
-            let debugPlane = try! heightMap.createDebugPlane()
-            debugPlane.position = [0, 1.0, -1.5]
-            content.add(debugPlane)
+//            let debugPlane = try! heightMap.createDebugPlane()
+//            debugPlane.position = [0, 1.0, -1.5]
+//            content.add(debugPlane)
+            let heightMapEntity = try! heightMap.createEntity(xzScale: heightMapXZScale, yScale: heightMapYScale)
+            heightMapEntity.position = [0, -1.0, -2]
+            content.add(heightMapEntity)
         } update: { content in
             // TBD
         }
