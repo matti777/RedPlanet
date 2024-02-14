@@ -1,0 +1,173 @@
+#usda 1.0
+(
+    customLayerData = {
+        string creator = "Reality Composer Pro Version 1.0 (409.100.11.0.1)"
+    }
+    defaultPrim = "Root"
+    metersPerUnit = 1
+    upAxis = "Y"
+)
+
+def Xform "Root"
+{
+    def Material "TerrainMaterial"
+    {
+        prepend token outputs:mtlx:surface.connect = </Root/TerrainMaterial/PreviewSurface.outputs:out>
+        token outputs:realitykit:vertex
+        string[] ui:nodegraph:realitykit:node:attributesShowingChildren = ["outputs:mtlx:surface"]
+        float2 ui:nodegraph:realitykit:subgraphOutputs:pos = (299.25, 99.5)
+        float2 ui:nodegraph:realitykit:subgraphOutputs:size = (181.5, 99)
+        int ui:nodegraph:realitykit:subgraphOutputs:stackingOrder = 123
+
+        def Shader "PreviewSurface"
+        {
+            uniform token info:id = "ND_UsdPreviewSurface_surfaceshader"
+            color3f inputs:diffuseColor.connect = </Root/TerrainMaterial/Multiply.outputs:out>
+            float inputs:metallic
+            float3 inputs:normal
+            float inputs:opacity
+            float inputs:roughness = 0.9
+            token outputs:out
+            float2 ui:nodegraph:node:pos = (74.25, 99.5)
+            float2 ui:nodegraph:node:size = (148.5, 199)
+            int ui:nodegraph:node:stackingOrder = 122
+            string[] ui:nodegraph:realitykit:node:attributesShowingChildren = ["inputs:normal"]
+        }
+
+        def Shader "Image"
+        {
+            uniform token info:id = "ND_image_color3"
+            asset inputs:file = @Materials/red_sand_ground.jpg@
+            string inputs:filtertype
+            string inputs:vaddressmode
+            color3f outputs:out
+            float2 ui:nodegraph:node:pos = (-222.6914, 32.80078)
+            float2 ui:nodegraph:node:size = (148.5, 199)
+            int ui:nodegraph:node:stackingOrder = 123
+            string[] ui:nodegraph:realitykit:node:attributesShowingChildren = ["outputs:out", "inputs:texcoord"]
+        }
+
+        def NodeGraph "Light_Angle"
+        {
+            reorder nameChildren = ["DotProduct_1", "Normalize_2", "Normal", "Normalize", "Divide_1"]
+            float3 inputs:LightDirection = (-1, 0, 0) (
+                customData = {
+                    dictionary realitykit = {
+                        float2 positionInSubgraph = (-43.691406, 125.44531)
+                        float2 sizeInSubgraph = (156, 53)
+                        int stackingOrderInSubgraph = 470
+                    }
+                }
+            )
+            float outputs:AngleFactor = 0.7 (
+                customData = {
+                    dictionary realitykit = {
+                        int stackingOrderInSubgraph = 336
+                    }
+                }
+            )
+            float outputs:AngleFactor.connect = </Root/TerrainMaterial/Light_Angle/Add.outputs:out>
+            float2 ui:nodegraph:node:pos = (-414.51953, 199.72786)
+            float2 ui:nodegraph:node:size = (127, 109)
+            int ui:nodegraph:node:stackingOrder = 121
+            string[] ui:nodegraph:realitykit:node:attributesShowingChildren = ["outputs:Angle", "outputs:AngleFactor", "outputs:AngleFactor", "outputs:AngleFactor", "outputs:AngleFactor", "outputs:AngleFactor", "outputs:AngleFactor", "outputs:AngleFactor"]
+            float2 ui:nodegraph:realitykit:subgraphOutputs:pos = (948.6914, 69.46484)
+            float2 ui:nodegraph:realitykit:subgraphOutputs:size = (160, 81)
+            int ui:nodegraph:realitykit:subgraphOutputs:stackingOrder = 453
+
+            def Shader "DotProduct_1"
+            {
+                uniform token info:id = "ND_dotproduct_vector3"
+                float3 inputs:in1.connect = </Root/TerrainMaterial/Light_Angle/Normalize_2.outputs:out>
+                float3 inputs:in2.connect = </Root/TerrainMaterial/Light_Angle/Normalize.outputs:out>
+                float outputs:out
+                float2 ui:nodegraph:node:pos = (361.60547, 82.86719)
+                float2 ui:nodegraph:node:size = (166, 53)
+                int ui:nodegraph:node:stackingOrder = 431
+                string[] ui:nodegraph:realitykit:node:attributesShowingChildren = ["outputs:out"]
+            }
+
+            def Shader "Normal"
+            {
+                uniform token info:id = "ND_normal_vector3"
+                string inputs:space = "world"
+                float3 outputs:out
+                float2 ui:nodegraph:node:pos = (-46.34375, 40.16797)
+                float2 ui:nodegraph:node:size = (128.5, 40)
+                int ui:nodegraph:node:stackingOrder = 467
+            }
+
+            def Shader "Normalize"
+            {
+                uniform token info:id = "ND_normalize_vector3"
+                float3 inputs:in.connect = </Root/TerrainMaterial/Light_Angle.inputs:LightDirection>
+                float3 outputs:out
+                float2 ui:nodegraph:node:pos = (153.82422, 121.19922)
+                float2 ui:nodegraph:node:size = (149, 40)
+                int ui:nodegraph:node:stackingOrder = 342
+            }
+
+            def Shader "Normalize_2"
+            {
+                uniform token info:id = "ND_normalize_vector3"
+                float3 inputs:in.connect = </Root/TerrainMaterial/Light_Angle/Normal.outputs:out>
+                float3 outputs:out
+                float2 ui:nodegraph:node:pos = (158.40625, 40.16797)
+                float2 ui:nodegraph:node:size = (164.5, 53)
+                int ui:nodegraph:node:stackingOrder = 468
+            }
+
+            def Shader "Clamp"
+            {
+                uniform token info:id = "ND_clamp_float"
+                float inputs:high
+                float inputs:in.connect = </Root/TerrainMaterial/Light_Angle/DotProduct_1.outputs:out>
+                float inputs:low
+                float outputs:out
+                float2 ui:nodegraph:node:pos = (529.90234, 86.984375)
+                float2 ui:nodegraph:node:size = (91, 145)
+                int ui:nodegraph:node:stackingOrder = 469
+                string[] ui:nodegraph:realitykit:node:attributesShowingChildren = []
+            }
+
+            def Shader "Multiply"
+            {
+                uniform token info:id = "ND_multiply_float"
+                float inputs:in1.connect = </Root/TerrainMaterial/Light_Angle/Clamp.outputs:out>
+                float inputs:in2 = 0.8
+                float inputs:in2.connect = None
+                float outputs:out
+                float2 ui:nodegraph:node:pos = (658.3633, 88.15234)
+                float2 ui:nodegraph:node:size = (60, 36)
+                int ui:nodegraph:node:stackingOrder = 465
+                string[] ui:nodegraph:realitykit:node:attributesShowingChildren = []
+            }
+
+            def Shader "Add"
+            {
+                uniform token info:id = "ND_add_float"
+                float inputs:in1.connect = </Root/TerrainMaterial/Light_Angle/Multiply.outputs:out>
+                float inputs:in2 = 0.2
+                float outputs:out
+                float2 ui:nodegraph:node:pos = (768.78516, 93.42969)
+                float2 ui:nodegraph:node:size = (61.5, 36.5)
+                int ui:nodegraph:node:stackingOrder = 466
+                string[] ui:nodegraph:realitykit:node:attributesShowingChildren = ["outputs:out"]
+            }
+        }
+
+        def Shader "Multiply"
+        {
+            uniform token info:id = "ND_multiply_color3FA"
+            color3f inputs:in1.connect = </Root/TerrainMaterial/Image.outputs:out>
+            float inputs:in2 = 1
+            float inputs:in2.connect = </Root/TerrainMaterial/Light_Angle.outputs:AngleFactor>
+            color3f outputs:out
+            float2 ui:nodegraph:node:pos = (-173.45703, 204.91406)
+            float2 ui:nodegraph:node:size = (60, 36)
+            int ui:nodegraph:node:stackingOrder = 119
+            string[] ui:nodegraph:realitykit:node:attributesShowingChildren = []
+        }
+    }
+}
+
