@@ -1,6 +1,7 @@
 {
   "images" : [
     {
+      "filename" : "AppIcon-Mars-2-foreground.png",
       "idiom" : "vision",
       "scale" : "2x"
     }
