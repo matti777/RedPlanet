@@ -14,37 +14,24 @@ def Xform "Root"
     {
         prepend token outputs:mtlx:surface.connect = </Root/TerrainMaterial/PreviewSurface.outputs:out>
         token outputs:realitykit:vertex
-        string[] ui:nodegraph:realitykit:node:attributesShowingChildren = ["outputs:mtlx:surface"]
-        float2 ui:nodegraph:realitykit:subgraphOutputs:pos = (299.25, 99.5)
+        string[] ui:nodegraph:realitykit:node:attributesShowingChildren = ["outputs:mtlx:surface", "outputs:mtlx:surface"]
+        float2 ui:nodegraph:realitykit:subgraphOutputs:pos = (423.9414, 116.234375)
         float2 ui:nodegraph:realitykit:subgraphOutputs:size = (181.5, 99)
-        int ui:nodegraph:realitykit:subgraphOutputs:stackingOrder = 123
+        int ui:nodegraph:realitykit:subgraphOutputs:stackingOrder = 359
 
         def Shader "PreviewSurface"
         {
             uniform token info:id = "ND_UsdPreviewSurface_surfaceshader"
-            color3f inputs:diffuseColor.connect = </Root/TerrainMaterial/Multiply.outputs:out>
+            color3f inputs:diffuseColor.connect = </Root/TerrainMaterial/Multiply_2.outputs:out>
             float inputs:metallic
             float3 inputs:normal
             float inputs:opacity
-            float inputs:roughness = 0.9
+            float inputs:roughness = 1
             token outputs:out
-            float2 ui:nodegraph:node:pos = (74.25, 99.5)
+            float2 ui:nodegraph:node:pos = (228.55469, 116.3125)
             float2 ui:nodegraph:node:size = (148.5, 199)
-            int ui:nodegraph:node:stackingOrder = 122
+            int ui:nodegraph:node:stackingOrder = 400
             string[] ui:nodegraph:realitykit:node:attributesShowingChildren = ["inputs:normal"]
-        }
-
-        def Shader "Image"
-        {
-            uniform token info:id = "ND_image_color3"
-            asset inputs:file = @Materials/red_sand_ground.jpg@
-            string inputs:filtertype
-            string inputs:vaddressmode
-            color3f outputs:out
-            float2 ui:nodegraph:node:pos = (-222.6914, 32.80078)
-            float2 ui:nodegraph:node:size = (148.5, 199)
-            int ui:nodegraph:node:stackingOrder = 123
-            string[] ui:nodegraph:realitykit:node:attributesShowingChildren = ["outputs:out", "inputs:texcoord"]
         }
 
         def NodeGraph "Light_Angle"
@@ -67,9 +54,9 @@ def Xform "Root"
                 }
             )
             float outputs:AngleFactor.connect = </Root/TerrainMaterial/Light_Angle/Add.outputs:out>
-            float2 ui:nodegraph:node:pos = (-414.51953, 199.72786)
+            float2 ui:nodegraph:node:pos = (29.722656, 304.85675)
             float2 ui:nodegraph:node:size = (127, 109)
-            int ui:nodegraph:node:stackingOrder = 121
+            int ui:nodegraph:node:stackingOrder = 351
             string[] ui:nodegraph:realitykit:node:attributesShowingChildren = ["outputs:Angle", "outputs:AngleFactor", "outputs:AngleFactor", "outputs:AngleFactor", "outputs:AngleFactor", "outputs:AngleFactor", "outputs:AngleFactor", "outputs:AngleFactor"]
             float2 ui:nodegraph:realitykit:subgraphOutputs:pos = (948.6914, 69.46484)
             float2 ui:nodegraph:realitykit:subgraphOutputs:size = (160, 81)
@@ -156,17 +143,153 @@ def Xform "Root"
             }
         }
 
+        def NodeGraph "Steepness_Factor"
+        {
+            float outputs:Scale (
+                customData = {
+                    dictionary realitykit = {
+                        int stackingOrderInSubgraph = 249
+                    }
+                }
+            )
+            float outputs:Scale.connect = </Root/TerrainMaterial/Steepness_Factor/Clamp.outputs:out>
+            float2 ui:nodegraph:node:pos = (-461.77832, 225.29785)
+            float2 ui:nodegraph:node:size = (164.5, 81)
+            int ui:nodegraph:node:stackingOrder = 360
+            string[] ui:nodegraph:realitykit:node:attributesShowingChildren = ["outputs:Scale", "outputs:Scale", "outputs:Scale"]
+            float2 ui:nodegraph:realitykit:subgraphOutputs:pos = (704.8281, 67.33203)
+            float2 ui:nodegraph:realitykit:subgraphOutputs:size = (136, 81)
+            int ui:nodegraph:realitykit:subgraphOutputs:stackingOrder = 252
+
+            def Shader "Normal"
+            {
+                uniform token info:id = "ND_normal_vector3"
+                float3 outputs:out
+                float2 ui:nodegraph:node:pos = (64.25, 72.5)
+                float2 ui:nodegraph:node:size = (128.5, 40)
+                int ui:nodegraph:node:stackingOrder = 249
+            }
+
+            def Shader "Separate3"
+            {
+                uniform token info:id = "ND_separate3_vector3"
+                float3 inputs:in.connect = </Root/TerrainMaterial/Steepness_Factor/Normal.outputs:out>
+                float outputs:outx
+                float outputs:outy
+                float outputs:outz
+                float2 ui:nodegraph:node:pos = (246.25, 72.5)
+                float2 ui:nodegraph:node:size = (115.5, 145)
+                int ui:nodegraph:node:stackingOrder = 249
+            }
+
+            def Shader "Clamp"
+            {
+                uniform token info:id = "ND_clamp_float"
+                float inputs:high
+                float inputs:in.connect = </Root/TerrainMaterial/Steepness_Factor/Absval.outputs:out>
+                float inputs:low
+                float outputs:out
+                float2 ui:nodegraph:node:pos = (566.47266, 76.75)
+                float2 ui:nodegraph:node:size = (91, 145)
+                int ui:nodegraph:node:stackingOrder = 254
+                string[] ui:nodegraph:realitykit:node:attributesShowingChildren = ["outputs:out"]
+            }
+
+            def Shader "Absval"
+            {
+                uniform token info:id = "ND_absval_float"
+                float inputs:in.connect = </Root/TerrainMaterial/Steepness_Factor/Separate3.outputs:outy>
+                float outputs:out
+                float2 ui:nodegraph:node:pos = (414.09375, 48.45703)
+                float2 ui:nodegraph:node:size = (121.5, 53)
+                int ui:nodegraph:node:stackingOrder = 255
+                string[] ui:nodegraph:realitykit:node:attributesShowingChildren = ["outputs:out"]
+            }
+        }
+
+        def Shader "Red_Sand_Texture"
+        {
+            uniform token info:id = "ND_image_color3"
+            asset inputs:file = @Materials/red_sand_ground.jpg@
+            string inputs:filtertype
+            string inputs:vaddressmode
+            color3f outputs:out
+            float2 ui:nodegraph:node:pos = (-450.8672, 52.484375)
+            float2 ui:nodegraph:node:size = (168.5, 199)
+            int ui:nodegraph:node:stackingOrder = 381
+            string[] ui:nodegraph:realitykit:node:attributesShowingChildren = ["outputs:out", "inputs:texcoord", "outputs:out"]
+        }
+
+        def Shader "Oneminus"
+        {
+            uniform token info:id = "ND_realitykit_oneminus_float"
+            float inputs:in.connect = </Root/TerrainMaterial/Steepness_Factor.outputs:Scale>
+            float outputs:out
+            float2 ui:nodegraph:node:pos = (-388.1914, 387.91797)
+            float2 ui:nodegraph:node:size = (158, 109)
+            int ui:nodegraph:node:stackingOrder = 376
+            string[] ui:nodegraph:realitykit:node:attributesShowingChildren = []
+        }
+
         def Shader "Multiply"
         {
             uniform token info:id = "ND_multiply_color3FA"
-            color3f inputs:in1.connect = </Root/TerrainMaterial/Image.outputs:out>
-            float inputs:in2 = 1
+            prepend color3f inputs:in1.connect = </Root/TerrainMaterial/Red_Sand_Texture.outputs:out>
+            float inputs:in2.connect = </Root/TerrainMaterial/Steepness_Factor.outputs:Scale>
+            color3f outputs:out
+            float2 ui:nodegraph:node:pos = (-278.3125, 121.35547)
+            float2 ui:nodegraph:node:size = (60, 36)
+            int ui:nodegraph:node:stackingOrder = 368
+        }
+
+        def Shader "Multiply_2"
+        {
+            uniform token info:id = "ND_multiply_color3FA"
+            prepend color3f inputs:in1.connect = </Root/TerrainMaterial/Add.outputs:out>
             float inputs:in2.connect = </Root/TerrainMaterial/Light_Angle.outputs:AngleFactor>
             color3f outputs:out
-            float2 ui:nodegraph:node:pos = (-173.45703, 204.91406)
+            float2 ui:nodegraph:node:pos = (2.8007812, 153.29297)
             float2 ui:nodegraph:node:size = (60, 36)
-            int ui:nodegraph:node:stackingOrder = 119
-            string[] ui:nodegraph:realitykit:node:attributesShowingChildren = []
+            int ui:nodegraph:node:stackingOrder = 344
+        }
+
+        def Shader "Stone_Texture"
+        {
+            uniform token info:id = "ND_image_color3"
+            color3f inputs:default
+            asset inputs:file = @Materials/red_mountain_rock.jpg@
+            string inputs:filtertype
+            float2 inputs:texcoord
+            string inputs:uaddressmode
+            string inputs:vaddressmode
+            color3f outputs:out
+            float2 ui:nodegraph:node:pos = (-179.5586, 422.17188)
+            float2 ui:nodegraph:node:size = (148.5, 199)
+            int ui:nodegraph:node:stackingOrder = 393
+        }
+
+        def Shader "Multiply_3"
+        {
+            uniform token info:id = "ND_multiply_color3FA"
+            prepend color3f inputs:in1.connect = </Root/TerrainMaterial/Stone_Texture.outputs:out>
+            float inputs:in2.connect = </Root/TerrainMaterial/Oneminus.outputs:out>
+            color3f outputs:out
+            float2 ui:nodegraph:node:pos = (-228.97656, 259.90234)
+            float2 ui:nodegraph:node:size = (60, 36)
+            int ui:nodegraph:node:stackingOrder = 398
+            string[] ui:nodegraph:realitykit:node:attributesShowingChildren = ["outputs:out", "outputs:out"]
+        }
+
+        def Shader "Add"
+        {
+            uniform token info:id = "ND_add_color3"
+            prepend color3f inputs:in1.connect = </Root/TerrainMaterial/Multiply.outputs:out>
+            color3f inputs:in2.connect = </Root/TerrainMaterial/Multiply_3.outputs:out>
+            color3f outputs:out
+            float2 ui:nodegraph:node:pos = (-130.49219, 163.73438)
+            float2 ui:nodegraph:node:size = (61.5, 36.5)
+            int ui:nodegraph:node:stackingOrder = 397
+            string[] ui:nodegraph:realitykit:node:attributesShowingChildren = ["outputs:out"]
         }
     }
 }

@@ -7,12 +7,14 @@
 
 import SwiftUI
 import RealityKit
+import RealityKitContent
 
 struct MainView: View {
     private let heightMapSize = 5 // 4097
     private let heightMapRoughness: Float = 0.1
     private let heightMapXZScale: Float = 0.5
-    private let heightMapYScale: Float = 0.5
+    private let heightMapYScale: Float = 0.9
+    private let heightMapUVScale: Float = 1.0
 
     var body: some View {
         RealityView { content in
@@ -22,7 +24,15 @@ struct MainView: View {
 //            let debugPlane = try! heightMap.createDebugPlane()
 //            debugPlane.position = [0, 1.0, -1.5]
 //            content.add(debugPlane)
-            let heightMapEntity = try! heightMap.createEntity(xzScale: heightMapXZScale, yScale: heightMapYScale)
+            let heightMapEntity = try! heightMap.createEntity(xzScale: heightMapXZScale, yScale: heightMapYScale, uvScale: heightMapUVScale)
+
+//            let textureResource = try! TextureResource.generate(from: experience.lobbyArtistBackgroundImage.cgImage!, options: .init(semantic: nil, mipmapsMode: .none))
+            let texture = try! TextureResource.load(named: "red_mountain_rock.jpg")
+            var material = UnlitMaterial()
+            material.color = .init(texture: .init(texture))
+//            let material = try! await ShaderGraphMaterial(named: "/Root/TerrainMaterial", from: "Scene.usda", in: realityKitContentBundle)
+            heightMapEntity.model!.materials = [material]
+            
             heightMapEntity.position = [0, -1.0, -2]
             content.add(heightMapEntity)
         } update: { content in

@@ -228,10 +228,13 @@ final class HeightMap {
     ///              mean a distance of 1.0 meters between heightmap value points in the landscape's XZ plane.
     ///   - yScale: Distance (in meters) between value points in the Y direction. This determines the height at each
     ///             heightmap value (vertex). The final height (Y value) at a vertex is determined by
-    ///             multiplying the normalized heightmap value by this parameter. Thus supplying yScale: 10.0 would result
+    ///             multiplying the normalized heightmap value by this parameter. 
+    ///             Thus supplying yScale: 10.0 would result
     ///             in a landscape where the height difference between the lowest and the highest point
     ///             would be 10 meters.
-    func createEntity(xzScale: Float, yScale: Float) throws -> Entity {
+    ///   - uvScale: How many times the texture should wrap in the object. Value of 1.0 means the entire texture
+    ///              is used exactly once, 2.0 means it is repeated twice over the mesh etc.
+    func createEntity(xzScale: Float, yScale: Float, uvScale: Float) throws -> ModelEntity {
         let startTime = CFAbsoluteTimeGetCurrent()
         defer {
             print("createEntity() took \(CFAbsoluteTimeGetCurrent() - startTime)")
@@ -246,22 +249,34 @@ final class HeightMap {
 
         // This will store our vertex positions (coordinates)
         var positions: [SIMD3<Float>] = Array.init(repeating: SIMD3<Float>(), count: numVertices)
+
+        // This will store our texture UV coordinates
+        var uvs: [SIMD2<Float>] = Array.init(repeating: SIMD2<Float>(), count: numVertices)
+
         var positionIndex = 0
         
         var zoffset = -((Float((mapSize / 2)) * xzScale) + (xzScale * 0.5))
         print("Will generate geometry in XZ plane [\(zoffset)..\(-zoffset)] and Y direction [\(minValue * yScale)..\(maxValue * yScale)]")
         
+        let uvStep = (1.0 / Float(mapSize - 1)) * uvScale
+        var v: Float = 0.0
+        
         // Create vertex positions
         for y in stride(from: 0, to: mapSize, by: 1) {
             var xoffset = -((Float((mapSize / 2)) * xzScale) + (xzScale * 0.5))
-        
+            var u: Float = 0.0
+
             for x in stride(from: 0, to: mapSize, by: 1) {
                 let normalizedValue = self[x, y] * normalizationScaler
-                positions[positionIndex] = ([xoffset, normalizedValue * yScale, zoffset])
+                positions[positionIndex] = [xoffset, normalizedValue * yScale, zoffset]
+                uvs[positionIndex] = [u, v]
+                
                 positionIndex += 1
                 xoffset += xzScale
+                u += uvStep
             }
             zoffset += xzScale
+            v += uvStep
         }
         
         print("vertex position generation took \(CFAbsoluteTimeGetCurrent() - startTime)")
@@ -275,7 +290,6 @@ final class HeightMap {
         // all normals for all vertices have been gathered, they will be summed up and normalized to form
         // a smoothed vertex normal.
         var normalsPerVertex: [[SIMD3<Float>]] = Array.init(repeating: [SIMD3<Float>](), count: numVertices)
-//        normalsPerVertex.reserveCapacity(numVertices)
         for vertexIndex in stride(from: 0, to: numVertices, by: 1) {
             normalsPerVertex[vertexIndex] = [SIMD3<Float>]()
         }
@@ -328,11 +342,8 @@ final class HeightMap {
 
         let startTime3 = CFAbsoluteTimeGetCurrent()
 
-        let entity = Entity()
-        entity.components.set(ModelComponent(mesh: try .generateFrom(positions: positions, normals: vertexNormals, uvs: nil, indices: indices), materials: [SimpleMaterial()]))
-
-        // TODO remove debug stuff
-        entity.components[ModelDebugOptionsComponent.self] = ModelDebugOptionsComponent(visualizationMode: .normal)
+        let entity = ModelEntity()
+        entity.components.set(ModelComponent(mesh: try .generateFrom(positions: positions, normals: vertexNormals, uvs: uvs, indices: indices), materials: [SimpleMaterial()]))
 
         print("entity creation took \(CFAbsoluteTimeGetCurrent() - startTime3)")
 
