@@ -17,7 +17,7 @@ def Xform "Root"
                 dictionary realitykit = {
                     float2 positionInSubgraph = (-35.90625, 276.3828)
                     float2 sizeInSubgraph = (156, 53)
-                    int stackingOrderInSubgraph = 414
+                    int stackingOrderInSubgraph = 424
                 }
             }
         )
@@ -39,7 +39,7 @@ def Xform "Root"
             token outputs:out
             float2 ui:nodegraph:node:pos = (228.55469, 116.3125)
             float2 ui:nodegraph:node:size = (148.5, 199)
-            int ui:nodegraph:node:stackingOrder = 400
+            int ui:nodegraph:node:stackingOrder = 420
             string[] ui:nodegraph:realitykit:node:attributesShowingChildren = ["inputs:normal"]
         }
 
@@ -51,7 +51,7 @@ def Xform "Root"
                     dictionary realitykit = {
                         float2 positionInSubgraph = (-43.691406, 125.44531)
                         float2 sizeInSubgraph = (156, 53)
-                        int stackingOrderInSubgraph = 471
+                        int stackingOrderInSubgraph = 472
                     }
                 }
             )
@@ -66,7 +66,7 @@ def Xform "Root"
             float outputs:AngleFactor.connect = </Root/TerrainMaterial/Light_Angle/Add.outputs:out>
             float2 ui:nodegraph:node:pos = (174.70703, 325.8255)
             float2 ui:nodegraph:node:size = (127, 109)
-            int ui:nodegraph:node:stackingOrder = 416
+            int ui:nodegraph:node:stackingOrder = 425
             string[] ui:nodegraph:realitykit:node:attributesShowingChildren = ["outputs:Angle", "outputs:AngleFactor", "outputs:AngleFactor", "outputs:AngleFactor", "outputs:AngleFactor", "outputs:AngleFactor", "outputs:AngleFactor", "outputs:AngleFactor"]
             float2 ui:nodegraph:realitykit:subgraphOutputs:pos = (948.6914, 69.46484)
             float2 ui:nodegraph:realitykit:subgraphOutputs:size = (160, 81)
@@ -119,11 +119,11 @@ def Xform "Root"
                 uniform token info:id = "ND_clamp_float"
                 float inputs:high
                 float inputs:in.connect = </Root/TerrainMaterial/Light_Angle/DotProduct_1.outputs:out>
-                float inputs:low
+                float inputs:low = 0
                 float outputs:out
                 float2 ui:nodegraph:node:pos = (529.90234, 86.984375)
                 float2 ui:nodegraph:node:size = (91, 145)
-                int ui:nodegraph:node:stackingOrder = 469
+                int ui:nodegraph:node:stackingOrder = 475
                 string[] ui:nodegraph:realitykit:node:attributesShowingChildren = []
             }
 
@@ -131,12 +131,12 @@ def Xform "Root"
             {
                 uniform token info:id = "ND_multiply_float"
                 float inputs:in1.connect = </Root/TerrainMaterial/Light_Angle/Clamp.outputs:out>
-                float inputs:in2 = 0.8
+                float inputs:in2 = 2.5
                 float inputs:in2.connect = None
                 float outputs:out
                 float2 ui:nodegraph:node:pos = (658.3633, 88.15234)
                 float2 ui:nodegraph:node:size = (60, 36)
-                int ui:nodegraph:node:stackingOrder = 465
+                int ui:nodegraph:node:stackingOrder = 476
                 string[] ui:nodegraph:realitykit:node:attributesShowingChildren = []
             }
 
@@ -148,7 +148,7 @@ def Xform "Root"
                 float outputs:out
                 float2 ui:nodegraph:node:pos = (768.78516, 93.42969)
                 float2 ui:nodegraph:node:size = (61.5, 36.5)
-                int ui:nodegraph:node:stackingOrder = 466
+                int ui:nodegraph:node:stackingOrder = 474
                 string[] ui:nodegraph:realitykit:node:attributesShowingChildren = ["outputs:out"]
             }
         }
@@ -162,14 +162,14 @@ def Xform "Root"
                     }
                 }
             )
-            float outputs:Scale.connect = </Root/TerrainMaterial/Steepness_Factor/Clamp.outputs:out>
+            float outputs:Scale.connect = </Root/TerrainMaterial/Steepness_Factor/Sin.outputs:out>
             float2 ui:nodegraph:node:pos = (-461.77832, 225.29785)
             float2 ui:nodegraph:node:size = (164.5, 81)
-            int ui:nodegraph:node:stackingOrder = 417
+            int ui:nodegraph:node:stackingOrder = 418
             string[] ui:nodegraph:realitykit:node:attributesShowingChildren = ["outputs:Scale", "outputs:Scale", "outputs:Scale"]
-            float2 ui:nodegraph:realitykit:subgraphOutputs:pos = (704.8281, 67.33203)
+            float2 ui:nodegraph:realitykit:subgraphOutputs:pos = (893.6094, 73.78125)
             float2 ui:nodegraph:realitykit:subgraphOutputs:size = (136, 81)
-            int ui:nodegraph:realitykit:subgraphOutputs:stackingOrder = 252
+            int ui:nodegraph:realitykit:subgraphOutputs:stackingOrder = 258
 
             def Shader "Normal"
             {
@@ -215,6 +215,16 @@ def Xform "Root"
                 int ui:nodegraph:node:stackingOrder = 255
                 string[] ui:nodegraph:realitykit:node:attributesShowingChildren = ["outputs:out"]
             }
+
+            def Shader "Sin"
+            {
+                uniform token info:id = "ND_sin_float"
+                float inputs:in.connect = </Root/TerrainMaterial/Steepness_Factor/Clamp.outputs:out>
+                float outputs:out
+                float2 ui:nodegraph:node:pos = (719.98047, 81.703125)
+                float2 ui:nodegraph:node:size = (116, 40)
+                int ui:nodegraph:node:stackingOrder = 262
+            }
         }
 
         def Shader "Red_Sand_Texture"
@@ -226,7 +236,7 @@ def Xform "Root"
             color3f outputs:out
             float2 ui:nodegraph:node:pos = (-450.8672, 52.484375)
             float2 ui:nodegraph:node:size = (168.5, 199)
-            int ui:nodegraph:node:stackingOrder = 381
+            int ui:nodegraph:node:stackingOrder = 419
             string[] ui:nodegraph:realitykit:node:attributesShowingChildren = ["outputs:out", "inputs:texcoord", "outputs:out"]
         }
 
@@ -312,6 +322,8 @@ def Xform "Root"
             bindMaterialAs = "weakerThanDescendants"
         )
         double size = 0.2
+        float3 xformOp:translate = (0.0064622276, 0.021576926, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
 
         def Material "DefaultMaterial"
         {

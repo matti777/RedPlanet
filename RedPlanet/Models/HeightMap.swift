@@ -197,6 +197,48 @@ final class HeightMap {
         return UIImage(cgImage: cgImage)
     }
 
+    /*
+     
+     POINT IN PLANE:
+     
+     
+     func intersectionPoint(lineOrigin: SIMD3<Float>, lineDirection: SIMD3<Float>, planeNormal: SIMD3<Float>, planePoint: SIMD3<Float>) -> (point: SIMD3<Float>?, isOnPlane: Bool) {
+     // Calculate the denominator of the parametric equation
+     let denominator = dot(planeNormal, lineDirection)
+     
+     // Check if the line is parallel to the plane
+     if abs(denominator) < 1e-6 {
+     return (nil, false)
+     }
+     
+     // Calculate the parameter t in the parametric equation
+     let t = dot(planeNormal, planePoint - lineOrigin) / denominator
+     
+     // Calculate the intersection point
+     let intersectionPoint = lineOrigin + t * lineDirection
+     
+     // Check if the intersection point is on the plane
+     let isOnPlane = abs(dot(planeNormal, intersectionPoint - planePoint)) < 1e-6
+     
+     return (intersectionPoint, isOnPlane)
+     }
+     
+     // Example usage:
+     let lineOrigin = SIMD3<Float>(1.0, 2.0, 3.0)
+     let lineDirection = SIMD3<Float>(0.5, 1.0, 1.5).normalized()
+     let planeNormal = SIMD3<Float>(1.0, -2.0, 1.0).normalized()
+     let planePoint = SIMD3<Float>(0.0, 0.0, 0.0)
+     
+     let result = intersectionPoint(lineOrigin: lineOrigin, lineDirection: lineDirection, planeNormal: planeNormal, planePoint: planePoint)
+     
+     if let intersectionPoint = result.point {
+     print("Intersection Point:", intersectionPoint)
+     print("Is on Plane:", result.isOnPlane)
+     } else {
+     print("The line is parallel to the plane.")
+     }
+     */
+    
     private func calculateFaceNormal(positions: [SIMD3<Float>], triangleIndices: [Int]) -> SIMD3<Float> {
         assert(triangleIndices.count == 3, "indices array size must be 3")
         
@@ -256,7 +298,7 @@ final class HeightMap {
         var positionIndex = 0
         
         var zoffset = -((Float((mapSize / 2)) * xzScale) + (xzScale * 0.5))
-        print("Will generate geometry in XZ plane [\(zoffset)..\(-zoffset)] and Y direction [\(minValue * yScale)..\(maxValue * yScale)]")
+        print("Will generate geometry in XZ plane [\(zoffset)..\(-zoffset)] and Y direction [\(minValue * yScale * normalizationScaler)..\(maxValue * yScale * normalizationScaler)]")
         
         let uvStep = (1.0 / Float(mapSize - 1)) * uvScale
         var v: Float = 0.0

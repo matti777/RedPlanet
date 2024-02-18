@@ -1,6 +1,8 @@
 # Red Planet
 
-A small demo application for Apple VisionOS that demostrates geometry generated in code as well as the use of custom shaders.
+A small demo application for Apple VisionOS that demostrates geometry generated in code as well as the use of custom materials using [ShaderGraphMaterial](TBD).
+
+TODO: add links + explanation for how shader graph materials work.
 
 Developed in the spirit of the old PC demo "mars".
 
@@ -10,7 +12,11 @@ TBA
 
 For a nice Shader Graph primer, see [this WWDC video](https://developer.apple.com/videos/play/wwdc2023/10202/).
 
-NOTE: there seems to be a weird issue with these materials created in a an USDx file; their textures *will not work* in your app unless you create a dummy object in the USDx file (in Reality Composer Pro) *and* bind your material to it! (Situation Xcode 15.3 Beta)
+NOTE: there seems to be a weird issue with these shader materials created in a an USDx file; their textures *will not work* in your app unless you create a dummy object in the USDx file (in Reality Composer Pro) *and bind your material* to it! (Situation Xcode 15.3 Beta). You don't need to use the dummy object, it just needs to be there in the scene file and have your texture bound to it and then you can use your texture for whatever.
+
+## Disabling default scene lighting
+
+TBA
 
 # License
 
