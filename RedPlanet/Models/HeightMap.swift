@@ -16,6 +16,8 @@ import RealityKit
 
  */
 final class HeightMap {
+    private static let heightMapModelName = "HeightMap"
+    
     private var values: [Float]
     private let mapSize: Int
     private let roughness: Float
@@ -196,49 +198,7 @@ final class HeightMap {
         
         return UIImage(cgImage: cgImage)
     }
-
-    /*
-     
-     POINT IN PLANE:
-     
-     
-     func intersectionPoint(lineOrigin: SIMD3<Float>, lineDirection: SIMD3<Float>, planeNormal: SIMD3<Float>, planePoint: SIMD3<Float>) -> (point: SIMD3<Float>?, isOnPlane: Bool) {
-     // Calculate the denominator of the parametric equation
-     let denominator = dot(planeNormal, lineDirection)
-     
-     // Check if the line is parallel to the plane
-     if abs(denominator) < 1e-6 {
-     return (nil, false)
-     }
-     
-     // Calculate the parameter t in the parametric equation
-     let t = dot(planeNormal, planePoint - lineOrigin) / denominator
-     
-     // Calculate the intersection point
-     let intersectionPoint = lineOrigin + t * lineDirection
-     
-     // Check if the intersection point is on the plane
-     let isOnPlane = abs(dot(planeNormal, intersectionPoint - planePoint)) < 1e-6
-     
-     return (intersectionPoint, isOnPlane)
-     }
-     
-     // Example usage:
-     let lineOrigin = SIMD3<Float>(1.0, 2.0, 3.0)
-     let lineDirection = SIMD3<Float>(0.5, 1.0, 1.5).normalized()
-     let planeNormal = SIMD3<Float>(1.0, -2.0, 1.0).normalized()
-     let planePoint = SIMD3<Float>(0.0, 0.0, 0.0)
-     
-     let result = intersectionPoint(lineOrigin: lineOrigin, lineDirection: lineDirection, planeNormal: planeNormal, planePoint: planePoint)
-     
-     if let intersectionPoint = result.point {
-     print("Intersection Point:", intersectionPoint)
-     print("Is on Plane:", result.isOnPlane)
-     } else {
-     print("The line is parallel to the plane.")
-     }
-     */
-    
+ 
     private func calculateFaceNormal(positions: [SIMD3<Float>], triangleIndices: [Int]) -> SIMD3<Float> {
         assert(triangleIndices.count == 3, "indices array size must be 3")
         
@@ -385,11 +345,70 @@ final class HeightMap {
         let startTime3 = CFAbsoluteTimeGetCurrent()
 
         let entity = ModelEntity()
-        entity.components.set(ModelComponent(mesh: try .generateFrom(positions: positions, normals: vertexNormals, uvs: uvs, indices: indices), materials: [SimpleMaterial()]))
+        entity.components.set(ModelComponent(mesh: try .generateFrom(name: HeightMap.heightMapModelName, positions: positions, normals: vertexNormals, uvs: uvs, indices: indices), materials: [SimpleMaterial()]))
 
+        entity.components.set(HeightMapComponent(mapSize: mapSize, xzScale: xzScale))
+        
         print("entity creation took \(CFAbsoluteTimeGetCurrent() - startTime3)")
 
         return entity
+    }
+    
+    /// Finds the geometry polygon at the normalized position ([0..1, 0..1]) on the heightmap and then
+    /// finds the Y coordinate on the polygon at that location.
+    ///
+    /// TODO: handle device transform as well?
+    static func getGeometryHeight(at normalizedPosition: SIMD2<Float>, entity: ModelEntity, xzScale: Float) -> Float {
+        let part = entity.model!.mesh.contents.models[heightMapModelName]!.parts[heightMapModelName]!
+        let c = entity.components[HeightMapComponent.self]!
+        
+        // Get the location on the heightmap from the normalized location
+        let xf = normalizedPosition.x * Float(c.mapSize)
+        let zf = normalizedPosition.y * Float(c.mapSize)
+        let xfrac = xf.truncatingRemainder(dividingBy: 1.0)
+        let zfrac = zf.truncatingRemainder(dividingBy: 1.0)
+        let i = Int(floor(xf))
+        let j = Int(floor(zf))
+        
+        // Figure out of the triangle indices of the polygon at the normalized position.
+        // Each "square" on the heightmap (x * y) is made up of 2 triangles, 3 indices each.
+        let indicesOffset = (j * c.mapSize * 3 * 2) + (i * 3 * 2)
+        let indices = part.triangleIndices!.elements
+        let i0, i1, i2: UInt32
+        
+        if xfrac <= zfrac {
+            // First triangle of the "square", the "upper left half"
+            i0 = indices[indicesOffset]
+            i1 = indices[indicesOffset + 1]
+            i2 = indices[indicesOffset + 2]
+        } else {
+            // Second triangle of the "square", the "bottom right half"
+            i0 = indices[indicesOffset + 3]
+            i1 = indices[indicesOffset + 4]
+            i2 = indices[indicesOffset + 5]
+        }
+        
+        // Extract the polygon vertices (positions)
+        let positions = part.positions.elements
+        let v0 = positions[Int(i0)]
+        let v1 = positions[Int(i1)]
+        let v2 = positions[Int(i2)]
+        
+        // Calculate the plane normal
+        let normalVector = normalize(cross(v1 - v0, v2 - v0))
+        
+        // Form a downwards vector from the position indicated by the normalized position
+        let v: SIMD3<Float> = [xf, -1.0, zf]
+        
+        // Calculate the point where the downwards vector v intersects the polygon
+        let intersectionPoint = v - dot(v - v0, normalVector) * normalVector
+        print("intersectionPoint = \(intersectionPoint)")
+        
+        // Check if the point is actually inside the polygon
+        let insidePolygon = dot(intersectionPoint - v0, normalVector) >= 0
+        print("insidePolygon = \(insidePolygon)")
+        
+        return intersectionPoint.y
     }
     
     /// Creates a 1m by 1m plane (in the XY plane) with the heightmap image as a texture.
@@ -409,4 +428,9 @@ final class HeightMap {
 
         return plane
     }
+}
+
+struct HeightMapComponent: Component, Equatable {
+    fileprivate let mapSize: Int
+    fileprivate let xzScale: Float
 }
