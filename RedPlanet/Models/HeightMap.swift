@@ -257,15 +257,16 @@ final class HeightMap {
 
         var positionIndex = 0
         
-        var zoffset = -((Float((mapSize / 2)) * xzScale) + (xzScale * 0.5))
-        print("Will generate geometry in XZ plane [\(zoffset)..\(-zoffset)] and Y direction [\(minValue * yScale * normalizationScaler)..\(maxValue * yScale * normalizationScaler)]")
+        let xzMinPos = -((Float(mapSize) / 2.0) * xzScale)
+        var zoffset = xzMinPos
+        print("Will generate geometry in XZ plane [\(xzMinPos)..\(-xzMinPos)] and Y direction [\(minValue * yScale * normalizationScaler)..\(maxValue * yScale * normalizationScaler)]")
         
         let uvStep = (1.0 / Float(mapSize - 1)) * uvScale
         var v: Float = 0.0
         
         // Create vertex positions
         for y in stride(from: 0, to: mapSize, by: 1) {
-            var xoffset = -((Float((mapSize / 2)) * xzScale) + (xzScale * 0.5))
+            var xoffset = xzMinPos
             var u: Float = 0.0
 
             for x in stride(from: 0, to: mapSize, by: 1) {
@@ -358,25 +359,29 @@ final class HeightMap {
     /// finds the Y coordinate on the polygon at that location.
     ///
     /// TODO: handle device transform as well?
-    static func getGeometryHeight(at normalizedPosition: SIMD2<Float>, entity: ModelEntity, xzScale: Float) -> Float {
+    static func getTerrainSurfacePoint(at normalizedPosition: SIMD2<Float>, entity: ModelEntity) -> SIMD3<Float> {
         let part = entity.model!.mesh.contents.models[heightMapModelName]!.parts[heightMapModelName]!
         let c = entity.components[HeightMapComponent.self]!
         
-        // Get the location on the heightmap from the normalized location
-        let xf = normalizedPosition.x * Float(c.mapSize)
-        let zf = normalizedPosition.y * Float(c.mapSize)
-        let xfrac = xf.truncatingRemainder(dividingBy: 1.0)
-        let zfrac = zf.truncatingRemainder(dividingBy: 1.0)
-        let i = Int(floor(xf))
-        let j = Int(floor(zf))
-        
+        // u,v are coordinates to the height map
+        let uf = normalizedPosition.x * Float(c.mapSize)
+        let vf = normalizedPosition.y * Float(c.mapSize)
+        let ufrac = uf.truncatingRemainder(dividingBy: 1.0)
+        let vfrac = vf.truncatingRemainder(dividingBy: 1.0)
+        let u = Int(floor(uf))
+        let v = Int(floor(vf))
+
+        // Get geometry (x, z) positions by translating from [0,0..1,1] to [-0.5,-0.5..0.5,0.5] and
+        // multiplying by the geometry scale
+        let geometryPosition = (normalizedPosition - [0.5, 0.5]) * ((Float(c.mapSize) / 2.0) * c.xzScale)
+
         // Figure out of the triangle indices of the polygon at the normalized position.
         // Each "square" on the heightmap (x * y) is made up of 2 triangles, 3 indices each.
-        let indicesOffset = (j * c.mapSize * 3 * 2) + (i * 3 * 2)
+        let indicesOffset = (v * c.mapSize * 3 * 2) + (u * 3 * 2)
         let indices = part.triangleIndices!.elements
         let i0, i1, i2: UInt32
         
-        if xfrac <= zfrac {
+        if ufrac <= vfrac {
             // First triangle of the "square", the "upper left half"
             i0 = indices[indicesOffset]
             i1 = indices[indicesOffset + 1]
@@ -394,21 +399,83 @@ final class HeightMap {
         let v1 = positions[Int(i1)]
         let v2 = positions[Int(i2)]
         
-        // Calculate the plane normal
-        let normalVector = normalize(cross(v1 - v0, v2 - v0))
+        // Form a downwards vector from a position (far) above the XZ position indicated
+        // by the normalized position
+        let lineOrigin = SIMD3<Float>(geometryPosition.x, 1e6, geometryPosition.y)
+        let lineDirection = SIMD3<Float>(0, -1, 0)
         
-        // Form a downwards vector from the position indicated by the normalized position
-        let v: SIMD3<Float> = [xf, -1.0, zf]
+        // Find the intersection point between said downwards vector and the terrain geometry polygon
+        guard let intersectionPoint = linePolygonIntersection(v0, v1, v2, lineOrigin, lineDirection) else {
+            log.error("failed to find intersection point")
+            return [geometryPosition.x, 0.0, geometryPosition.y]
+        }
         
-        // Calculate the point where the downwards vector v intersects the polygon
-        let intersectionPoint = v - dot(v - v0, normalVector) * normalVector
-        print("intersectionPoint = \(intersectionPoint)")
+        return intersectionPoint
+    }
+    
+    /// Calculates the intersection point of a directional line ("ray") and a polygon (triangle)
+    /// in 3D space, if any, using the Möller–Trumbore intersection algorithm.
+    ///
+    /// See: https://en.wikipedia.org/wiki/M%C3%B6ller%E2%80%93Trumbore_intersection_algorithm
+    ///
+    /// Vertices are to be defined in the counter-clockwise order.
+    ///
+    ///  - Parameters:
+    ///    - v0: vertex of the triangle
+    ///    - v1: vertex of the triangle
+    ///    - v2: vertex of the triangle
+    ///    - lineOrigin: an "origin" point for the line (ie. any point on the line)
+    ///    - lineDirection: direction vector for the line, from the lineOrigin.
+    ///  - Returns: the intersection point or nil if the line ("ray") does not intersect with the polygon (triangle)
+    private static func linePolygonIntersection(_ v0: SIMD3<Float>, _ v1: SIMD3<Float>, _ v2: SIMD3<Float>, _ lineOrigin: SIMD3<Float>, _ lineDirection: SIMD3<Float>) -> SIMD3<Float>? {
+        // 'epsilon' is a very small tolerance value used for ~equality comparison and it is used to
+        // counter floating-point math accuracy issues.
+        let epsilon: Float = 1e-6
+
+        let edge1 = v1 - v0
+        let edge2 = v2 - v0
+
+        // Check if the line is parallel to the plane; that is, if the dot product between the line direction
+        // and the polygon's normal is zero. For this, we will find the value of the determinant (used later
+        // in the solution). The determinant is the area of the parallelogram created by two vectors. If this
+        // area is zero, the vectors are parallel.
+        let lineCrossEdge2 = cross(lineDirection, edge2)
+        let det = dot(edge1, lineCrossEdge2)
+        if abs(det) < epsilon {
+            // In our use case, this should never happen, thus log it as error
+            log.error("line is parallel to the polygon")
+            return nil
+        }
+
+        // Find "u" and reject values outside their range
+        let invdet = 1.0 / det;
+        let s = lineOrigin - v0;
+        let u = invdet * dot(s, lineCrossEdge2);
         
-        // Check if the point is actually inside the polygon
-        let insidePolygon = dot(intersectionPoint - v0, normalVector) >= 0
-        print("insidePolygon = \(insidePolygon)")
+        if u < 0 || u > 1 {
+            log.debug("u is outside [0,1]: \(u)")
+            return nil;
+        }
+
+        // Find "v" and reject values outside their range
+        let sCrossEdge1 = cross(s, edge1);
+        let v = invdet * dot(lineDirection, sCrossEdge1);
         
-        return intersectionPoint.y
+        if v < 0 || u + v > 1 {
+            log.debug("v is outside its range")
+            return nil;
+        }
+        
+        // Compute "t" to find where the intersection point is on the line
+        let t = invdet * dot(edge2, sCrossEdge1);
+        
+        if t > epsilon {
+            return lineOrigin + lineDirection * t
+        } else {
+            // Intersection point is on the line but not on the "ray" (from origin towards direction)
+            log.debug("the intersection point is in the opposite direction on the line")
+            return lineOrigin + lineDirection * t
+        }
     }
     
     /// Creates a 1m by 1m plane (in the XY plane) with the heightmap image as a texture.
@@ -431,6 +498,6 @@ final class HeightMap {
 }
 
 struct HeightMapComponent: Component, Equatable {
-    fileprivate let mapSize: Int
-    fileprivate let xzScale: Float
+    let mapSize: Int
+    let xzScale: Float
 }
