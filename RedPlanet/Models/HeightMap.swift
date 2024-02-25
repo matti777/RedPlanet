@@ -115,6 +115,7 @@ final class HeightMap {
         }
     }
     
+    @inline(__always)
     private func squareStep(x: Int, y: Int, tileSize: Int) {
         let halfSize = tileSize / 2
         let average = (getValue(x: x, y: y - halfSize) +
@@ -174,7 +175,6 @@ final class HeightMap {
         }
 
         let valueRange = maxValue - minValue
-        print("minValue = \(minValue) maxValue = \(maxValue) valueRange = \(valueRange)")
         
         var pixelData = [UInt8](repeating: 0, count: values.count * 4)
         let valueMultiplier = 255.0 / valueRange
@@ -203,6 +203,7 @@ final class HeightMap {
         return UIImage(cgImage: cgImage)
     }
  
+    @inline(__always)
     private func calculateFaceNormal(positions: [SIMD3<Float>], triangleIndices: [Int]) -> SIMD3<Float> {
         assert(triangleIndices.count == 3, "indices array size must be 3")
         
@@ -373,7 +374,7 @@ final class HeightMap {
         let part = entity.model!.mesh.contents.models[heightMapModelName]!.parts[heightMapModelName]!
         let m = entity.heightMap!
         
-        log.debug("normalizedPosition: \(normalizedPosition)")
+//        log.debug("normalizedPosition: \(normalizedPosition)")
         
         // The co-ordinatesu,v are coordinates to the height map and will identify the map "square"
         // made up of 2 triangles. Their fractional parts indicate the exact location on the "square" and thus
@@ -385,14 +386,14 @@ final class HeightMap {
         let u = Int(floor(uf))
         let v = Int(floor(vf))
         
-        log.debug("(uf,vf): \(uf),\(vf)")
-        log.debug("(u,v): \(u),\(v), frac: \(ufrac),\(vfrac)")
+//        log.debug("(uf,vf): \(uf),\(vf)")
+//        log.debug("(u,v): \(u),\(v), frac: \(ufrac),\(vfrac)")
 
         // Get geometry (x, z) positions by translating from [0,0..1,1] to [-0.5..0.5] and
         // multiplying by the geometry scale
         let geometryPosition = (normalizedPosition - [0.5, 0.5]) * (Float(m.mapSize - 1) * m.xzScale)
 
-        log.debug("geometryPosition: \(geometryPosition)")
+//        log.debug("geometryPosition: \(geometryPosition)")
         
         // Figure out of the triangle indices of the polygon at the normalized position.
         // Each "square" on the heightmap (x * y) is made up of 2 triangles, 3 indices each.
@@ -402,19 +403,19 @@ final class HeightMap {
         
         if ufrac + vfrac <= 1.0 {
             // First triangle of the "square", the "upper left half"
-            log.debug("selecting upper left triangle")
+//            log.debug("selecting upper left triangle")
             i0 = indices[indicesOffset]
             i1 = indices[indicesOffset + 1]
             i2 = indices[indicesOffset + 2]
         } else {
             // Second triangle of the "square", the "bottom right half"
-            log.debug("selecting lower right triangle")
+//            log.debug("selecting lower right triangle")
             i0 = indices[indicesOffset + 3]
             i1 = indices[indicesOffset + 4]
             i2 = indices[indicesOffset + 5]
         }
         
-        log.debug("triangle indices: (\(i0),\(i1),\(i2))")
+//        log.debug("triangle indices: (\(i0),\(i1),\(i2))")
         
         // Extract the polygon vertices (positions)
         let positions = part.positions.elements
@@ -422,7 +423,7 @@ final class HeightMap {
         let v1 = positions[Int(i1)]
         let v2 = positions[Int(i2)]
         
-        log.debug("triangle vertices: (\(v0),\(v1),\(v2)")
+//        log.debug("triangle vertices: (\(v0),\(v1),\(v2)")
         
         // Form a downwards vector from a position (far) above the XZ position indicated
         // by the normalized position

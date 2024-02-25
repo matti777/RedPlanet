@@ -21,7 +21,7 @@ struct MainView: View {
     private let arkitSession = ARKitSession()
     private let worldTrackingProvider = WorldTrackingProvider()
     
-    private let movementSpeedMultiplier: Float = 0.000001
+    private let movementSpeedMultiplier: Float = 0.0000001
     private let normalizedPositionMargin: Float = 0.1
     
     /// Normalized position on the heightmap; start in the center (0.5, 0.5).
@@ -31,8 +31,6 @@ struct MainView: View {
         DragGesture()
             .targetedToAnyEntity()
             .onChanged { value in
-                print("Drag: \(value.velocity)")
-                
                 // Use drag event velocity to move around on the terrain
                 var newPosition = normalizedPosition + SIMD2<Float>(Float(-value.velocity.width) * movementSpeedMultiplier, Float(value.velocity.height) * movementSpeedMultiplier)
 
@@ -51,7 +49,6 @@ struct MainView: View {
                 }
 
                 normalizedPosition = newPosition
-                print("updated normalizedPosition: \(normalizedPosition)")
             }
     }
     
@@ -77,7 +74,7 @@ struct MainView: View {
             
             content.add(terrain)
         } update: { content in
-            log.debug("RealityView.update called")
+//            log.debug("RealityView.update called")
             
             guard let terrain = content.entities.first(where: { entity in
                 entity.components.has(HeightMapComponent.self)
@@ -86,16 +83,34 @@ struct MainView: View {
                 return
             }
 
+            // Get the (Vision Pro) device ("camera" / head) world position so we can compensate for it
+            let deviceTransform = getDeviceTransform()!
+            let devicePosition = deviceTransform[3]
+//            print("devicePosition = \(devicePosition)")
+            
             let terrainSurfacePoint = try! HeightMap.getTerrainSurfacePoint(at: normalizedPosition, entity: terrain)
-            log.debug("terrainSurfacePoint: \(terrainSurfacePoint)")
+//            log.debug("terrainSurfacePoint: \(terrainSurfacePoint)")
             
             // Simulate a "virtual camera" (eg. moving on the terrain) by translating the terrain by the
             // "virtual camera" position on the terrain
             terrain.position = -terrainSurfacePoint
-            terrain.position.y += 2.0 // TODO figure this out
+//            terrain.position.y += 2.0 // TODO figure this out
+            terrain.position.y += devicePosition.y - 0.8
         }.onAppear {
             Task {
                 try! await arkitSession.run([worldTrackingProvider])
+                
+                // TODO check if we need this
+                for await update in worldTrackingProvider.anchorUpdates {
+                    switch update.event {
+                    case .added, .updated:
+                        // Update the app's understanding of this world anchor.
+                        print("Anchor position updated.")
+                    case .removed:
+                        // Remove content related to this anchor.
+                        print("Anchor position now unknown.")
+                    }
+                }
             }
         }.gesture(drag)
     }
@@ -121,7 +136,7 @@ struct MainView: View {
     
     /// Gets the current transform (in world space) of the (Vision Pro) device
     /// (ie. head / "camera" position + orientation
-    private func getDeviceTransform() async -> simd_float4x4? {
+    private func getDeviceTransform() -> simd_float4x4? {
         guard let deviceAnchor = worldTrackingProvider.queryDeviceAnchor(atTimestamp: CACurrentMediaTime()) else {
             return nil
         }
