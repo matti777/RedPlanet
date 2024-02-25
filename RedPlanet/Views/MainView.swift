@@ -11,18 +11,49 @@ import RealityKitContent
 import ARKit
 
 struct MainView: View {
-    private let heightMapSize = 33 // 4097
-    private let heightMapRoughness: Float = 0.9
+    private let heightMapSize = 129 // 4097
+    private let heightMapRoughness: Float = 0.5
     private let heightMapXZScale: Float = 0.5
-    private let heightMapYScale: Float = 5.0
-    private let heightMapUVScale: Float = 8.0
+    private let heightMapYScale: Float = 20.0
+    private let heightMapUVScale: Float = 1.0
     private let lightDirectionVector: SIMD3<Float> = [2, 1, 0]
 
     private let arkitSession = ARKitSession()
     private let worldTrackingProvider = WorldTrackingProvider()
     
+    private let movementSpeedMultiplier: Float = 0.000001
+    private let normalizedPositionMargin: Float = 0.1
+    
     /// Normalized position on the heightmap; start in the center (0.5, 0.5).
     @State private var normalizedPosition = SIMD2<Float>(0.5, 0.5)
+
+    var drag: some Gesture {
+        DragGesture()
+            .targetedToAnyEntity()
+            .onChanged { value in
+                print("Drag: \(value.velocity)")
+                
+                // Use drag event velocity to move around on the terrain
+                var newPosition = normalizedPosition + SIMD2<Float>(Float(-value.velocity.width) * movementSpeedMultiplier, Float(value.velocity.height) * movementSpeedMultiplier)
+
+                // Limit the position to certain margins
+                if newPosition.x < normalizedPositionMargin {
+                    newPosition.x = normalizedPositionMargin
+                }
+                if newPosition.x > (1.0 - normalizedPositionMargin) {
+                    newPosition.x = (1.0 - normalizedPositionMargin)
+                }
+                if newPosition.y < normalizedPositionMargin {
+                    newPosition.y = normalizedPositionMargin
+                }
+                if newPosition.y > (1.0 - normalizedPositionMargin) {
+                    newPosition.y = (1.0 - normalizedPositionMargin)
+                }
+
+                normalizedPosition = newPosition
+                print("updated normalizedPosition: \(normalizedPosition)")
+            }
+    }
     
     var body: some View {
         RealityView { content in
@@ -38,9 +69,13 @@ struct MainView: View {
             try! material.setParameter(name: "LightDirection", value: .simd3Float(lightDirectionVector))
             terrain.model!.materials = [material]
             terrain.components.set(createIBLComponent())
-            content.add(terrain)
+
+            // Add a huge collision target for the terrain so we can capture drag events anywhere in the space
+            terrain.components.set(InputTargetComponent())
+//            terrain.generateCollisionShapes(recursive: true)
+            terrain.components.set(CollisionComponent(shapes: [ShapeResource.generateBox(size: SIMD3<Float>(1e5, 0.1, 1e6))], isStatic: true))
             
-            log.debug("all content added")
+            content.add(terrain)
         } update: { content in
             log.debug("RealityView.update called")
             
@@ -51,18 +86,18 @@ struct MainView: View {
                 return
             }
 
-            let terrainSurfacePoint = HeightMap.getTerrainSurfacePoint(at: normalizedPosition, entity: terrain)
+            let terrainSurfacePoint = try! HeightMap.getTerrainSurfacePoint(at: normalizedPosition, entity: terrain)
             log.debug("terrainSurfacePoint: \(terrainSurfacePoint)")
             
             // Simulate a "virtual camera" (eg. moving on the terrain) by translating the terrain by the
             // "virtual camera" position on the terrain
-            log.debug("terrain position: \(terrain.position)")
-            terrain.position.y = -(terrainSurfacePoint.y)
+            terrain.position = -terrainSurfacePoint
+            terrain.position.y += 2.0 // TODO figure this out
         }.onAppear {
             Task {
                 try! await arkitSession.run([worldTrackingProvider])
             }
-        }
+        }.gesture(drag)
     }
     
     /// Creates an ImageBasedLightComponent from a single-color source image. This can be

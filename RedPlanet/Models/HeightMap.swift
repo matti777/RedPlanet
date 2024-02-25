@@ -28,6 +28,7 @@ final class HeightMap {
     enum Error: Swift.Error {
         case invalidArgument(message: String)
         case bitmapCreationFailed
+        case invalidPosition
     }
     
     /// Creates a new square heightmap with a given size (number of values per side) and roughness.
@@ -90,6 +91,9 @@ final class HeightMap {
 
     /// Returns a value at [x, y]. If coordinates are out of bounds, wrap them.
     func getValue(x: Int, y: Int) -> Float {
+        
+        // TODO write this using modulo
+        
         var wrapx = x
         while wrapx < 0 {
             wrapx += mapSize
@@ -116,7 +120,7 @@ final class HeightMap {
         let average = (getValue(x: x, y: y - halfSize) +
                        getValue(x: x + halfSize, y: y) +
                        getValue(x: x, y: y + halfSize) +
-                       getValue(x: x - halfSize, y: y)) / 4.0
+                       getValue(x: x - halfSize, y: y)) * 0.25
         
         let offset = Float(drand48() - 0.5) * roughness * Float(tileSize)
         self[x, y] = average + offset
@@ -257,7 +261,7 @@ final class HeightMap {
 
         var positionIndex = 0
         
-        let xzMinPos = -((Float(mapSize) / 2.0) * xzScale)
+        let xzMinPos = -((Float(mapSize - 1) / 2.0) * xzScale)
         var zoffset = xzMinPos
         print("Will generate geometry in XZ plane [\(xzMinPos)..\(-xzMinPos)] and Y direction [\(minValue * yScale * normalizationScaler)..\(maxValue * yScale * normalizationScaler)]")
         
@@ -319,7 +323,7 @@ final class HeightMap {
                 normalsPerVertex[i1].append(faceNormal1)
                 normalsPerVertex[i2].append(faceNormal1)
 
-                // Triangle two is the "lower left corner"
+                // Triangle two is the "lower right corner"
                 let i3 = (y + 1) * mapSize + x
                 let i4 = (y + 1) * mapSize + (x + 1)
                 let i5 = y * mapSize + (x + 1)
@@ -359,39 +363,58 @@ final class HeightMap {
     /// finds the Y coordinate on the polygon at that location.
     ///
     /// TODO: handle device transform as well?
-    static func getTerrainSurfacePoint(at normalizedPosition: SIMD2<Float>, entity: ModelEntity) -> SIMD3<Float> {
+    static func getTerrainSurfacePoint(at normalizedPosition: SIMD2<Float>, entity: ModelEntity) throws -> SIMD3<Float> {
+        if normalizedPosition.x <= 0 || normalizedPosition.x >= 1 ||
+            normalizedPosition.y <= 0 || normalizedPosition.y >= 1 {
+            log.error("invalid normalizedPosition: \(normalizedPosition)")
+            throw Error.invalidPosition
+        }
+            
         let part = entity.model!.mesh.contents.models[heightMapModelName]!.parts[heightMapModelName]!
-        let c = entity.components[HeightMapComponent.self]!
+        let m = entity.heightMap!
         
-        // u,v are coordinates to the height map
-        let uf = normalizedPosition.x * Float(c.mapSize)
-        let vf = normalizedPosition.y * Float(c.mapSize)
+        log.debug("normalizedPosition: \(normalizedPosition)")
+        
+        // The co-ordinatesu,v are coordinates to the height map and will identify the map "square"
+        // made up of 2 triangles. Their fractional parts indicate the exact location on the "square" and thus
+        // can be used to find the correct triangle to look at for the height check.
+        let uf = normalizedPosition.x * Float(m.mapSize - 1)
+        let vf = normalizedPosition.y * Float(m.mapSize - 1)
         let ufrac = uf.truncatingRemainder(dividingBy: 1.0)
         let vfrac = vf.truncatingRemainder(dividingBy: 1.0)
         let u = Int(floor(uf))
         let v = Int(floor(vf))
+        
+        log.debug("(uf,vf): \(uf),\(vf)")
+        log.debug("(u,v): \(u),\(v), frac: \(ufrac),\(vfrac)")
 
-        // Get geometry (x, z) positions by translating from [0,0..1,1] to [-0.5,-0.5..0.5,0.5] and
+        // Get geometry (x, z) positions by translating from [0,0..1,1] to [-0.5..0.5] and
         // multiplying by the geometry scale
-        let geometryPosition = (normalizedPosition - [0.5, 0.5]) * ((Float(c.mapSize) / 2.0) * c.xzScale)
+        let geometryPosition = (normalizedPosition - [0.5, 0.5]) * (Float(m.mapSize - 1) * m.xzScale)
 
+        log.debug("geometryPosition: \(geometryPosition)")
+        
         // Figure out of the triangle indices of the polygon at the normalized position.
         // Each "square" on the heightmap (x * y) is made up of 2 triangles, 3 indices each.
-        let indicesOffset = (v * c.mapSize * 3 * 2) + (u * 3 * 2)
+        let indicesOffset = (v * (m.mapSize - 1) * 3 * 2) + (u * 3 * 2)
         let indices = part.triangleIndices!.elements
         let i0, i1, i2: UInt32
         
-        if ufrac <= vfrac {
+        if ufrac + vfrac <= 1.0 {
             // First triangle of the "square", the "upper left half"
+            log.debug("selecting upper left triangle")
             i0 = indices[indicesOffset]
             i1 = indices[indicesOffset + 1]
             i2 = indices[indicesOffset + 2]
         } else {
             // Second triangle of the "square", the "bottom right half"
+            log.debug("selecting lower right triangle")
             i0 = indices[indicesOffset + 3]
             i1 = indices[indicesOffset + 4]
             i2 = indices[indicesOffset + 5]
         }
+        
+        log.debug("triangle indices: (\(i0),\(i1),\(i2))")
         
         // Extract the polygon vertices (positions)
         let positions = part.positions.elements
@@ -399,9 +422,11 @@ final class HeightMap {
         let v1 = positions[Int(i1)]
         let v2 = positions[Int(i2)]
         
+        log.debug("triangle vertices: (\(v0),\(v1),\(v2)")
+        
         // Form a downwards vector from a position (far) above the XZ position indicated
         // by the normalized position
-        let lineOrigin = SIMD3<Float>(geometryPosition.x, 1e6, geometryPosition.y)
+        let lineOrigin = SIMD3<Float>(geometryPosition.x, 1e4, geometryPosition.y)
         let lineDirection = SIMD3<Float>(0, -1, 0)
         
         // Find the intersection point between said downwards vector and the terrain geometry polygon
@@ -453,7 +478,7 @@ final class HeightMap {
         let u = invdet * dot(s, lineCrossEdge2);
         
         if u < 0 || u > 1 {
-            log.debug("u is outside [0,1]: \(u)")
+            log.error("u is outside [0,1]: \(u)")
             return nil;
         }
 
@@ -462,7 +487,7 @@ final class HeightMap {
         let v = invdet * dot(lineDirection, sCrossEdge1);
         
         if v < 0 || u + v > 1 {
-            log.debug("v is outside its range")
+            log.error("v is outside its range")
             return nil;
         }
         
@@ -474,7 +499,8 @@ final class HeightMap {
         } else {
             // Intersection point is on the line but not on the "ray" (from origin towards direction)
             log.debug("the intersection point is in the opposite direction on the line")
-            return lineOrigin + lineDirection * t
+//            return lineOrigin + lineDirection * t
+            return nil
         }
     }
     
@@ -497,7 +523,15 @@ final class HeightMap {
     }
 }
 
-struct HeightMapComponent: Component, Equatable {
+/// Used to attach heightmap metadata into the generated terrain ModelEntity.
+struct HeightMapComponent: Component, Equatable, Codable {
     let mapSize: Int
     let xzScale: Float
 }
+
+extension ModelEntity {
+    var heightMap: HeightMapComponent? {
+        return self.components[HeightMapComponent.self]
+    }
+}
+
