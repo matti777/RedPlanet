@@ -109,9 +109,15 @@ final class HeightMap {
 
     /// Checks that the size value is in form of 2^n+1
     private func check(size: Int) throws {
-        // TODO check for 2^n+1 instead
-        if size % 2 != 1 {
-            throw Error.invalidArgument(message: "size must be 2n+1 instead of: \(size)")
+        if size < 5 {
+            throw Error.invalidArgument(message: "size must be >= 5")
+        }
+        
+        let n = size - 1
+
+        // Check if only one bit is set in the binary representation
+        if (n & (n - 1)) != 0 {
+            throw Error.invalidArgument(message: "size is not n^2+1")
         }
     }
     

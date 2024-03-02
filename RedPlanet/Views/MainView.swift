@@ -57,25 +57,16 @@ struct MainView: View {
             content.add(createSkySphere())
             
             let heightMap = try! HeightMap(size: heightMapSize, roughness: heightMapRoughness)
-//            let debugPlane = try! heightMap.createDebugPlane()
-//            debugPlane.position = [0, 1.0, -1.5]
-//            content.add(debugPlane)
             let terrain = try! heightMap.createEntity(xzScale: heightMapXZScale, yScale: heightMapYScale, uvScale: heightMapUVScale)
 
             var material = try! await ShaderGraphMaterial(named: "/Root/TerrainMaterial", from: "Scene.usda", in: realityKitContentBundle)
             try! material.setParameter(name: "LightDirection", value: .simd3Float(lightDirectionVector))
             terrain.model!.materials = [material]
             terrain.components.set(createIBLComponent())
-
-            // Add a huge collision target for the terrain so we can capture drag events anywhere in the space
-            terrain.components.set(InputTargetComponent())
-//            terrain.generateCollisionShapes(recursive: true)
-            terrain.components.set(CollisionComponent(shapes: [ShapeResource.generateBox(size: SIMD3<Float>(1e5, 0.1, 1e6))], isStatic: true))
             
             content.add(terrain)
+            content.add(createCollisionBox())
         } update: { content in
-//            log.debug("RealityView.update called")
-            
             guard let terrain = content.entities.first(where: { entity in
                 entity.components.has(HeightMapComponent.self)
             }) as? ModelEntity else {
@@ -86,7 +77,6 @@ struct MainView: View {
             // Get the (Vision Pro) device ("camera" / head) world position so we can compensate for it
             let deviceTransform = getDeviceTransform()!
             let devicePosition = deviceTransform[3]
-//            print("devicePosition = \(devicePosition)")
             
             let terrainSurfacePoint = try! HeightMap.getTerrainSurfacePoint(at: normalizedPosition, entity: terrain)
 //            log.debug("terrainSurfacePoint: \(terrainSurfacePoint)")
@@ -159,5 +149,46 @@ struct MainView: View {
         skySphere.scale = .init(x: 1, y: 1, z: -1)
         
         return skySphere
+    }
+    
+    /// Creates an invisible, enclosing box of collision shapes to capture gestures anywhere
+    func createCollisionBox() -> Entity {
+        let size: Float = 30 // There is a maximum distance for input events so we cannot use 'infinity'
+        let thickness: Float = 0.001
+        let offset = size / 2
+        
+        let front = Entity()
+        front.components.set(CollisionComponent(shapes: [.generateBox(width: size, height: size, depth: thickness)]))
+        front.position.z = offset
+        
+        let back = Entity()
+        back.components.set(CollisionComponent(shapes: [.generateBox(width: size, height: size, depth: thickness)]))
+        back.position.z = -offset
+        
+        let right = Entity()
+        right.components.set(CollisionComponent(shapes: [.generateBox(width: thickness, height: size, depth: size)]))
+        right.position.x = offset
+        
+        let left = Entity()
+        left.components.set(CollisionComponent(shapes: [.generateBox(width: thickness, height: size, depth: size)]))
+        left.position.x = -offset
+        
+        let top = Entity()
+        top.components.set(CollisionComponent(shapes: [.generateBox(width: size, height: thickness, depth: size)]))
+        top.position.y = offset
+        
+        let bottom = Entity()
+        bottom.components.set(CollisionComponent(shapes: [.generateBox(width: size, height: thickness, depth: size)]))
+        bottom.position.y = -offset
+        
+        let entity = Entity()
+        let faces = [front, back, right, left, top, bottom]
+        
+        for face in faces {
+            face.components.set(InputTargetComponent())
+            entity.addChild(face)
+        }
+        
+        return entity
     }
 }
