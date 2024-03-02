@@ -176,13 +176,13 @@ final class HeightMap {
     func createEntity(xzScale: Float, yScale: Float, uvScale: Float) throws -> ModelEntity {
         let startTime = CFAbsoluteTimeGetCurrent()
         defer {
-            print("createEntity() took \(CFAbsoluteTimeGetCurrent() - startTime)")
+            log.debug("createEntity() took \(CFAbsoluteTimeGetCurrent() - startTime)")
         }
 
         let numVertices = mapSize * mapSize
         let numFaces = (mapSize - 1) * (mapSize - 1) * 2
         let numIndices = numFaces * 3
-        print("Will generate: \(numVertices) vertices, \(numFaces) faces, \(numIndices) indices.")
+        log.debug("Will generate: \(numVertices) vertices, \(numFaces) faces, \(numIndices) indices.")
 
         let normalizationScaler = 1.0 / (maxValue - minValue)
 
@@ -196,7 +196,7 @@ final class HeightMap {
         
         let xzMinPos = -((Float(mapSize - 1) / 2.0) * xzScale)
         var zoffset = xzMinPos
-        print("Will generate geometry in XZ plane [\(xzMinPos)..\(-xzMinPos)] and Y direction [\(minValue * yScale * normalizationScaler)..\(maxValue * yScale * normalizationScaler)]")
+        log.debug("Will generate geometry in XZ plane [\(xzMinPos)..\(-xzMinPos)] and Y direction [\(self.minValue * yScale * normalizationScaler)..\(self.maxValue * yScale * normalizationScaler)]")
         
         let uvStep = (1.0 / Float(mapSize - 1)) * uvScale
         var v: Float = 0.0
@@ -219,7 +219,7 @@ final class HeightMap {
             v += uvStep
         }
         
-        print("vertex position generation took \(CFAbsoluteTimeGetCurrent() - startTime)")
+        log.debug("vertex position generation took \(CFAbsoluteTimeGetCurrent() - startTime)")
 
         let startTime2 = CFAbsoluteTimeGetCurrent()
         
@@ -278,16 +278,16 @@ final class HeightMap {
         let vertexNormals = normalsPerVertex.map { normalize($0.reduce(SIMD3<Float>(), +)) }
         assert(vertexNormals.count == numVertices, "invalid number of vertex normals generated")
         
-        print("indices / normals generation took \(CFAbsoluteTimeGetCurrent() - startTime2)")
+        log.debug("indices / normals generation took \(CFAbsoluteTimeGetCurrent() - startTime2)")
 
         let startTime3 = CFAbsoluteTimeGetCurrent()
 
         let entity = ModelEntity()
         entity.components.set(ModelComponent(mesh: try .generateFrom(name: HeightMap.heightMapModelName, positions: positions, normals: vertexNormals, uvs: uvs, indices: indices), materials: [SimpleMaterial()]))
 
-        entity.components.set(HeightMapComponent(mapSize: mapSize, xzScale: xzScale))
+        entity.components.set(HeightMapComponent(mapSize: mapSize, xzScale: xzScale, positions: positions))
         
-        print("entity creation took \(CFAbsoluteTimeGetCurrent() - startTime3)")
+        log.debug("entity creation took \(CFAbsoluteTimeGetCurrent() - startTime3)")
 
         return entity
     }
@@ -303,10 +303,7 @@ final class HeightMap {
             throw Error.invalidPosition
         }
             
-        let part = entity.model!.mesh.contents.models[heightMapModelName]!.parts[heightMapModelName]!
         let m = entity.heightMap!
-        
-//        log.debug("normalizedPosition: \(normalizedPosition)")
         
         // The co-ordinatesu,v are coordinates to the height map and will identify the map "square"
         // made up of 2 triangles. Their fractional parts indicate the exact location on the "square" and thus
@@ -318,44 +315,29 @@ final class HeightMap {
         let u = Int(floor(uf))
         let v = Int(floor(vf))
         
-//        log.debug("(uf,vf): \(uf),\(vf)")
-//        log.debug("(u,v): \(u),\(v), frac: \(ufrac),\(vfrac)")
-
         // Get geometry (x, z) positions by translating from [0,0..1,1] to [-0.5..0.5] and
         // multiplying by the geometry scale
         let geometryPosition = (normalizedPosition - [0.5, 0.5]) * (Float(m.mapSize - 1) * m.xzScale)
 
-//        log.debug("geometryPosition: \(geometryPosition)")
-        
         // Figure out of the triangle indices of the polygon at the normalized position.
         // Each "square" on the heightmap (x * y) is made up of 2 triangles, 3 indices each.
-        let indicesOffset = (v * (m.mapSize - 1) * 3 * 2) + (u * 3 * 2)
-        let indices = part.triangleIndices!.elements // TODO this line is causing huge CPU spike
-        let i0, i1, i2: UInt32
-        
+        let i0, i1, i2: Int
         if ufrac + vfrac <= 1.0 {
             // First triangle of the "square", the "upper left half"
-//            log.debug("selecting upper left triangle")
-            i0 = indices[indicesOffset]
-            i1 = indices[indicesOffset + 1]
-            i2 = indices[indicesOffset + 2]
+            i0 = v * m.mapSize + u
+            i1 = (v + 1) * m.mapSize + u
+            i2 = v * m.mapSize + (u + 1)
         } else {
             // Second triangle of the "square", the "bottom right half"
-//            log.debug("selecting lower right triangle")
-            i0 = indices[indicesOffset + 3]
-            i1 = indices[indicesOffset + 4]
-            i2 = indices[indicesOffset + 5]
+            i0 = (v + 1) * m.mapSize + u
+            i1 = (v + 1) * m.mapSize + (u + 1)
+            i2 = v * m.mapSize + (u + 1)
         }
         
-//        log.debug("triangle indices: (\(i0),\(i1),\(i2))")
-        
         // Extract the polygon vertices (positions)
-        let positions = part.positions.elements
-        let v0 = positions[Int(i0)]
-        let v1 = positions[Int(i1)]
-        let v2 = positions[Int(i2)]
-        
-//        log.debug("triangle vertices: (\(v0),\(v1),\(v2)")
+        let v0 = m.positions[i0]
+        let v1 = m.positions[i1]
+        let v2 = m.positions[i2]
         
         // Form a downwards vector from a position (far) above the XZ position indicated
         // by the normalized position
@@ -533,6 +515,7 @@ final class HeightMap {
 struct HeightMapComponent: Component, Equatable, Codable {
     let mapSize: Int
     let xzScale: Float
+    let positions: [SIMD3<Float>]
 }
 
 extension ModelEntity {

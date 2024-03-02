@@ -21,7 +21,7 @@ struct MainView: View {
     private let arkitSession = ARKitSession()
     private let worldTrackingProvider = WorldTrackingProvider()
     
-    private let movementSpeedMultiplier: Float = 0.0000001
+    private let movementSpeedMultiplier: Float = 0.00000001
     private let normalizedPositionMargin: Float = 0.1
     
     /// Normalized position on the heightmap; start in the center (0.5, 0.5).
@@ -32,7 +32,9 @@ struct MainView: View {
             .targetedToAnyEntity()
             .onChanged { value in
                 // Use drag event velocity to move around on the terrain
-                var newPosition = normalizedPosition + SIMD2<Float>(Float(-value.velocity.width) * movementSpeedMultiplier, Float(value.velocity.height) * movementSpeedMultiplier)
+                
+                // TODO consider the camera orientation here
+                var newPosition = normalizedPosition + SIMD2<Float>(Float(-value.velocity.width) * movementSpeedMultiplier, Float(-value.velocity.height) * movementSpeedMultiplier)
 
                 // Limit the position to certain margins
                 if newPosition.x < normalizedPositionMargin {
