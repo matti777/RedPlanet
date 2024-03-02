@@ -7,6 +7,7 @@
 
 import UIKit
 import RealityKit
+import GameplayKit
 
 /*
   A height map generated using the Diamond-Square algorithm with recursion for a minimal code complexity.
@@ -18,9 +19,10 @@ import RealityKit
 final class HeightMap {
     private static let heightMapModelName = "HeightMap"
     
+    private let random: GKRandomSource
+    
     private var values: [Float]
     private let mapSize: Int
-    private let roughness: Float
     
     private var minValue: Float = 0.0
     private var maxValue: Float = 0.0
@@ -39,9 +41,9 @@ final class HeightMap {
     ///   - size: Length / width of the generated map. The value must be 2^n+1 where n = positive integer.
     ///   - roughness: Determines the roughness of the terrain. Must be [0..1].
     init(size: Int, roughness: Float) throws {
+        self.random = GKRandomSource.sharedRandom()
         self.mapSize = size
         self.values = Array(repeating: 0, count: size * size)
-        self.roughness = roughness
         
         try check(size: size)
         
@@ -50,7 +52,7 @@ final class HeightMap {
         }
         
         // Set corner values
-        let cornerValue = Float(drand48())
+        let cornerValue = random.nextUniform() - 0.5
         self[0, 0] = cornerValue
         self[0, size - 1] = cornerValue
         self[size - 1, 0] = cornerValue
@@ -62,9 +64,12 @@ final class HeightMap {
         }
 
         var tileSize = mapSize - 1
+        var randomness: Float = 1.0
+        
         while tileSize >= 2 {
-            try diamondSquare(x: 0, y: 0, tileSize: tileSize)
+            try diamondSquare(x: 0, y: 0, tileSize: tileSize, randomness: randomness)
             tileSize /= 2
+            randomness *= roughness
         }
         
         self.minValue = values.min()!
@@ -294,8 +299,6 @@ final class HeightMap {
     
     /// Finds the geometry polygon at the normalized position ([0..1, 0..1]) on the heightmap and then
     /// finds the Y coordinate on the polygon at that location.
-    ///
-    /// TODO: handle device transform as well?
     static func getTerrainSurfacePoint(at normalizedPosition: SIMD2<Float>, entity: ModelEntity) throws -> SIMD3<Float> {
         if normalizedPosition.x <= 0 || normalizedPosition.x >= 1 ||
             normalizedPosition.y <= 0 || normalizedPosition.y >= 1 {
@@ -382,15 +385,13 @@ final class HeightMap {
     }
     
     @inline(__always)
-    private func squareStep(x: Int, y: Int, tileSize: Int) {
-        let halfSize = tileSize / 2
+    private func squareStep(x: Int, y: Int, _ tileSize: Int, _ randomness: Float, _ halfSize: Int) {
         let average = (getValue(x: x, y: y - halfSize) +
                        getValue(x: x + halfSize, y: y) +
                        getValue(x: x, y: y + halfSize) +
                        getValue(x: x - halfSize, y: y)) * 0.25
         
-        let offset = Float(drand48() - 0.5) * roughness * Float(tileSize)
-        let value = average + offset
+        let value = average + Float(random.nextUniform() - 0.5) * randomness
         self[x, y] = value
         
         // Make the mep tileable
@@ -402,7 +403,7 @@ final class HeightMap {
         }
     }
     
-    private func diamondSquare(x: Int, y: Int, tileSize: Int) throws {
+    private func diamondSquare(x: Int, y: Int, tileSize: Int, randomness: Float) throws {
         let halfSize = tileSize / 2
         
         // Diamond steps (set the center point value of each 'tile')
@@ -411,19 +412,19 @@ final class HeightMap {
                 let average = (self[x, y] +
                                self[x + tileSize, y] +
                                self[x + tileSize, y + tileSize] +
-                               self[x, y + tileSize]) / 4.0
-                let offset = Float(drand48() - 0.5) * roughness * Float(tileSize)
-                self[x + halfSize, y + halfSize] = average + offset
+                               self[x, y + tileSize]) * 0.25
+                let value = average + Float(random.nextUniform() - 0.5) * randomness
+                self[x + halfSize, y + halfSize] = value
             }
         }
         
         // Square steps (set the middle point of each edge of the each 'tile'
         for x in stride(from: 0, to: mapSize - 1, by: tileSize) {
             for y in stride(from: 0, to: mapSize - 1, by: tileSize) {
-                squareStep(x: x + tileSize, y: y + halfSize, tileSize: tileSize) // right
-                squareStep(x: x + halfSize, y: y + tileSize, tileSize: tileSize) // bottom
-                squareStep(x: x, y: y + halfSize, tileSize: tileSize) // left (do after right)
-                squareStep(x: x + halfSize, y: y, tileSize: tileSize) // top (do after bottom)
+                squareStep(x: x + tileSize, y: y + halfSize, tileSize, randomness, halfSize) // right
+                squareStep(x: x + halfSize, y: y + tileSize, tileSize, randomness, halfSize) // bottom
+                squareStep(x: x, y: y + halfSize, tileSize, randomness, halfSize) // left (do after right)
+                squareStep(x: x + halfSize, y: y, tileSize, randomness, halfSize) // top (do after bottom)
             }
         }
     }
