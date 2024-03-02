@@ -11,11 +11,11 @@ import RealityKitContent
 import ARKit
 
 struct MainView: View {
-    private let heightMapSize = 129 // 4097
-    private let heightMapRoughness: Float = 0.5
+    private let heightMapSize = 1025
+    private let heightMapRoughness: Float = 0.3
     private let heightMapXZScale: Float = 0.5
-    private let heightMapYScale: Float = 20.0
-    private let heightMapUVScale: Float = 1.0
+    private let heightMapYScale: Float = 150.0
+    private let heightMapUVScale: Float = 30.0
     private let lightDirectionVector: SIMD3<Float> = [2, 1, 0]
 
     private let arkitSession = ARKitSession()

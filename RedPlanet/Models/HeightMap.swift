@@ -31,6 +31,8 @@ final class HeightMap {
         case invalidPosition
     }
     
+    // MARK: Initializers
+    
     /// Creates a new square heightmap with a given size (number of values per side) and roughness.
     ///
     /// - Parameters:
@@ -48,11 +50,11 @@ final class HeightMap {
         }
         
         // Set corner values
-//        let cornerValue = Float(drand48())
-        self[0, 0] = Float(drand48())
-        self[0, size - 1] = Float(drand48())
-        self[size - 1, 0] = Float(drand48())
-        self[size - 1, size - 1] = Float(drand48())
+        let cornerValue = Float(drand48())
+        self[0, 0] = cornerValue
+        self[0, size - 1] = cornerValue
+        self[size - 1, 0] = cornerValue
+        self[size - 1, size - 1] = cornerValue
         
         let startTime = CFAbsoluteTimeGetCurrent()
         defer {
@@ -68,8 +70,18 @@ final class HeightMap {
         self.minValue = values.min()!
         self.maxValue = values.max()!
     }
+    
+    // MARK: Public methods
 
+    /// Returns a modulus for a compared to n (a % n in some environments)
+    @inline(__always)
+    func mod(_ a: Int, _ n: Int) -> Int {
+        let r = a % n
+        return r >= 0 ? r : r + n
+    }
+    
     /// Returns a value at [x, y]. No bounds checking.
+    @inline(__always)
     subscript(x: Int, y: Int) -> Float {
         get {
             values[y * mapSize + x]
@@ -79,86 +91,12 @@ final class HeightMap {
         }
     }
     
-    func debugPrintValues() {
-        for y in stride(from: 0, to: mapSize, by: 1) {
-            var values = ""
-            for x in stride(from: 0, to: mapSize, by: 1) {
-                values += "\t\(self[x, y])"
-            }
-            print(values)
-        }
-    }
-
     /// Returns a value at [x, y]. If coordinates are out of bounds, wrap them.
-    func getValue(x: Int, y: Int) -> Float {
-        
-        // TODO write this using modulo
-        
-        var wrapx = x
-        while wrapx < 0 {
-            wrapx += mapSize
-        }
-        
-        var wrapy = y
-        while wrapy < 0 {
-            wrapy += mapSize
-        }
-        
-        return self[wrapx % mapSize, wrapy % mapSize]
-    }
-
-    /// Checks that the size value is in form of 2^n+1
-    private func check(size: Int) throws {
-        if size < 5 {
-            throw Error.invalidArgument(message: "size must be >= 5")
-        }
-        
-        let n = size - 1
-
-        // Check if only one bit is set in the binary representation
-        if (n & (n - 1)) != 0 {
-            throw Error.invalidArgument(message: "size is not n^2+1")
-        }
-    }
-    
     @inline(__always)
-    private func squareStep(x: Int, y: Int, tileSize: Int) {
-        let halfSize = tileSize / 2
-        let average = (getValue(x: x, y: y - halfSize) +
-                       getValue(x: x + halfSize, y: y) +
-                       getValue(x: x, y: y + halfSize) +
-                       getValue(x: x - halfSize, y: y)) * 0.25
-        
-        let offset = Float(drand48() - 0.5) * roughness * Float(tileSize)
-        self[x, y] = average + offset
+    func getValue(x: Int, y: Int) -> Float {
+        return self[mod(x, (mapSize - 1)), mod(y, (mapSize - 1))]
     }
 
-    private func diamondSquare(x: Int, y: Int, tileSize: Int) throws {
-        let halfSize = tileSize / 2
-
-        // Diamond steps (set the center point value of each 'tile')
-        for x in stride(from: 0, to: mapSize - 1, by: tileSize) {
-            for y in stride(from: 0, to: mapSize - 1, by: tileSize) {
-                let average = (self[x, y] +
-                               self[x + tileSize, y] +
-                               self[x + tileSize, y + tileSize] +
-                               self[x, y + tileSize]) / 4.0
-                let offset = Float(drand48() - 0.5) * roughness * Float(tileSize)
-                self[x + halfSize, y + halfSize] = average + offset
-            }
-        }
-        
-        // Square steps (set the middle point of each edge of the each 'tile'
-        for x in stride(from: 0, to: mapSize - 1, by: tileSize) {
-            for y in stride(from: 0, to: mapSize - 1, by: tileSize) {
-                squareStep(x: x + halfSize, y: y, tileSize: tileSize) // top
-                squareStep(x: x + tileSize, y: y + halfSize, tileSize: tileSize) // right
-                squareStep(x: x + halfSize, y: y + tileSize, tileSize: tileSize) // bottom
-                squareStep(x: x, y: y + halfSize, tileSize: tileSize) // left
-            }
-        }
-    }
-    
     /// Creates an UIImage out of the heightmap, eg. for visualization purposes
     func toImage() throws -> UIImage {
         let startTime = CFAbsoluteTimeGetCurrent()
@@ -207,18 +145,6 @@ final class HeightMap {
         }
         
         return UIImage(cgImage: cgImage)
-    }
- 
-    @inline(__always)
-    private func calculateFaceNormal(positions: [SIMD3<Float>], triangleIndices: [Int]) -> SIMD3<Float> {
-        assert(triangleIndices.count == 3, "indices array size must be 3")
-        
-        // Calculate vectors representing two edges of the face
-        let v1 = positions[triangleIndices[1]] - positions[triangleIndices[0]]
-        let v2 = positions[triangleIndices[2]] - positions[triangleIndices[0]]
-
-        // Calculate the cross product to get the face normal
-        return normalize(cross(v1, v2))
     }
     
     /// Creates a RealityKit entity from the heightmap, in the XZ plane where the heightmap values will be
@@ -404,7 +330,7 @@ final class HeightMap {
         // Figure out of the triangle indices of the polygon at the normalized position.
         // Each "square" on the heightmap (x * y) is made up of 2 triangles, 3 indices each.
         let indicesOffset = (v * (m.mapSize - 1) * 3 * 2) + (u * 3 * 2)
-        let indices = part.triangleIndices!.elements
+        let indices = part.triangleIndices!.elements // TODO this line is causing huge CPU spike
         let i0, i1, i2: UInt32
         
         if ufrac + vfrac <= 1.0 {
@@ -445,6 +371,80 @@ final class HeightMap {
         return intersectionPoint
     }
     
+    // MARK: Private methods
+    
+    /// Checks that the size value is in form of 2^n+1
+    private func check(size: Int) throws {
+        if size < 5 {
+            throw Error.invalidArgument(message: "size must be >= 5")
+        }
+        
+        let n = size - 1
+        
+        // Check if only one bit is set in the binary representation
+        if (n & (n - 1)) != 0 {
+            throw Error.invalidArgument(message: "size is not n^2+1")
+        }
+    }
+    
+    @inline(__always)
+    private func calculateFaceNormal(positions: [SIMD3<Float>], triangleIndices: [Int]) -> SIMD3<Float> {
+        assert(triangleIndices.count == 3, "indices array size must be 3")
+        
+        // Calculate vectors representing two edges of the face
+        let v1 = positions[triangleIndices[1]] - positions[triangleIndices[0]]
+        let v2 = positions[triangleIndices[2]] - positions[triangleIndices[0]]
+        
+        // Calculate the cross product to get the face normal
+        return normalize(cross(v1, v2))
+    }
+    
+    @inline(__always)
+    private func squareStep(x: Int, y: Int, tileSize: Int) {
+        let halfSize = tileSize / 2
+        let average = (getValue(x: x, y: y - halfSize) +
+                       getValue(x: x + halfSize, y: y) +
+                       getValue(x: x, y: y + halfSize) +
+                       getValue(x: x - halfSize, y: y)) * 0.25
+        
+        let offset = Float(drand48() - 0.5) * roughness * Float(tileSize)
+        let value = average + offset
+        self[x, y] = value
+        
+        // Make the mep tileable
+        if x == 0 {
+            self[mapSize - 1, y] = value
+        }
+        if y == 0 {
+            self[x, mapSize - 1] = value
+        }
+    }
+    
+    private func diamondSquare(x: Int, y: Int, tileSize: Int) throws {
+        let halfSize = tileSize / 2
+        
+        // Diamond steps (set the center point value of each 'tile')
+        for x in stride(from: 0, to: mapSize - 1, by: tileSize) {
+            for y in stride(from: 0, to: mapSize - 1, by: tileSize) {
+                let average = (self[x, y] +
+                               self[x + tileSize, y] +
+                               self[x + tileSize, y + tileSize] +
+                               self[x, y + tileSize]) / 4.0
+                let offset = Float(drand48() - 0.5) * roughness * Float(tileSize)
+                self[x + halfSize, y + halfSize] = average + offset
+            }
+        }
+        
+        // Square steps (set the middle point of each edge of the each 'tile'
+        for x in stride(from: 0, to: mapSize - 1, by: tileSize) {
+            for y in stride(from: 0, to: mapSize - 1, by: tileSize) {
+                squareStep(x: x + tileSize, y: y + halfSize, tileSize: tileSize) // right
+                squareStep(x: x + halfSize, y: y + tileSize, tileSize: tileSize) // bottom
+                squareStep(x: x, y: y + halfSize, tileSize: tileSize) // left (do after right)
+                squareStep(x: x + halfSize, y: y, tileSize: tileSize) // top (do after bottom)
+            }
+        }
+    }
     /// Calculates the intersection point of a directional line ("ray") and a polygon (triangle)
     /// in 3D space, if any, using the Möller–Trumbore intersection algorithm.
     ///
@@ -506,7 +506,6 @@ final class HeightMap {
         } else {
             // Intersection point is on the line but not on the "ray" (from origin towards direction)
             log.debug("the intersection point is in the opposite direction on the line")
-//            return lineOrigin + lineDirection * t
             return nil
         }
     }
