@@ -21,7 +21,10 @@ struct MainView: View {
     private let arkitSession = ARKitSession()
     private let worldTrackingProvider = WorldTrackingProvider()
     
+    /// Controls the movement speed
     private let movementSpeedMultiplier: Float = 0.00000001
+    
+    /// Defines the width of the no-go area on the map (in normalized coordinates)
     private let normalizedPositionMargin: Float = 0.1
     
     /// Normalized position on the heightmap; start in the center (0.5, 0.5).
@@ -39,26 +42,7 @@ struct MainView: View {
         DragGesture()
             .targetedToAnyEntity()
             .onChanged { value in
-                // Use drag event velocity to move around on the terrain
-                
-                // TODO consider the camera orientation here
-                var newPosition = normalizedPosition + SIMD2<Float>(Float(-value.velocity.width) * movementSpeedMultiplier, Float(-value.velocity.height) * movementSpeedMultiplier)
-
-                // Limit the position to certain margins
-                if newPosition.x < normalizedPositionMargin {
-                    newPosition.x = normalizedPositionMargin
-                }
-                if newPosition.x > (1.0 - normalizedPositionMargin) {
-                    newPosition.x = (1.0 - normalizedPositionMargin)
-                }
-                if newPosition.y < normalizedPositionMargin {
-                    newPosition.y = normalizedPositionMargin
-                }
-                if newPosition.y > (1.0 - normalizedPositionMargin) {
-                    newPosition.y = (1.0 - normalizedPositionMargin)
-                }
-
-                normalizedPosition = newPosition
+                handleDragMovement(dragVelocity: value.velocity)
             }
     }
     
@@ -89,12 +73,10 @@ struct MainView: View {
             let devicePosition = deviceTransform[3]
             
             let terrainSurfacePoint = try! HeightMap.getTerrainSurfacePoint(at: normalizedPosition, entity: terrain)
-//            log.debug("terrainSurfacePoint: \(terrainSurfacePoint)")
             
             // Simulate a "virtual camera" (eg. moving on the terrain) by translating the terrain by the
             // "virtual camera" position on the terrain
             terrain.position = -terrainSurfacePoint
-//            terrain.position.y += 2.0 // TODO figure this out
             terrain.position.y += devicePosition.y - 0.8
         }.onAppear {
             Task {
@@ -115,6 +97,45 @@ struct MainView: View {
         }
         .gesture(drag)
         .gesture(tap)
+    }
+    
+    // MARK: Private methods
+    
+    private func handleDragMovement(dragVelocity: CGSize) {
+        guard let deviceTransform = getDeviceTransform() else {
+            log.error("Device transform not available!")
+            return
+        }
+        
+        // Use the device forward / right vectors to move around.
+        // We start by projecting them onto the XZ plane and normalizing them.
+        let deviceForwardVector = deviceTransform[2]
+        let deviceRightVector = deviceTransform[0]
+        let forward = normalize(SIMD2<Float>(deviceForwardVector.x, deviceForwardVector.z))
+        let right = normalize(SIMD2<Float>(deviceRightVector.x, deviceRightVector.z))
+        
+        // Calculate new position from forward vector multiplied by vertical drag amount plus
+        // the right vector multiplied by the horizontal drag amount.
+        var newPosition = normalizedPosition
+        newPosition += forward * (Float(-dragVelocity.height) * movementSpeedMultiplier)
+        newPosition += right * (Float(-dragVelocity.width) * movementSpeedMultiplier)
+        
+        // Limit the position to certain margins
+        if newPosition.x < normalizedPositionMargin {
+            newPosition.x = normalizedPositionMargin
+        }
+        if newPosition.x > (1.0 - normalizedPositionMargin) {
+            newPosition.x = (1.0 - normalizedPositionMargin)
+        }
+        if newPosition.y < normalizedPositionMargin {
+            newPosition.y = normalizedPositionMargin
+        }
+        if newPosition.y > (1.0 - normalizedPositionMargin) {
+            newPosition.y = (1.0 - normalizedPositionMargin)
+        }
+        
+        // Update the position state variable
+        normalizedPosition = newPosition
     }
     
     /// Creates an ImageBasedLightComponent from a single-color source image. This can be
@@ -168,7 +189,7 @@ struct MainView: View {
     }
     
     /// Creates an invisible, enclosing box of collision shapes to capture gestures anywhere
-    func createCollisionBox() -> Entity {
+    private func createCollisionBox() -> Entity {
         let size: Float = 30 // There is a maximum distance for input events so we cannot use 'infinity'
         let thickness: Float = 0.001
         let offset = size / 2
