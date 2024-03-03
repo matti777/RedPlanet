@@ -28,7 +28,7 @@ This software is available under the [MIT License](LICENSE.md).
 
 # Acknowledgements & attritions
 
-Space skybox texture is a free download from [hdri-skies.com](https://hdri-skies.com/).
+Space skybox texture is a free download from [spacespheremaps.com](https://www.spacespheremaps.com/).
 
 App icon by Toni Itkonen.
 

@@ -16,7 +16,7 @@ struct MainView: View {
     private let heightMapXZScale: Float = 0.5
     private let heightMapYScale: Float = 130.0
     private let heightMapUVScale: Float = 150.0
-    private let lightDirectionVector: SIMD3<Float> = [2, 1, 0]
+    private let lightDirectionVector: SIMD3<Float> = [0.4, 0.5, -0.8]
 
     private let arkitSession = ARKitSession()
     private let worldTrackingProvider = WorldTrackingProvider()
@@ -156,6 +156,10 @@ struct MainView: View {
         let skySphere = Entity()
         skySphere.components.set(ModelComponent(mesh: .generateSphere(radius: 1E3), materials: [material]))
         
+        // Rotate the sky so that the star (light source) is in the desired position in the sky
+        skySphere.orientation *= simd_quatf(angle: Float(Angle(degrees: 30).radians), axis: [1, 0, 0])
+        skySphere.orientation *= simd_quatf(angle: Float(Angle(degrees: 160).radians), axis: [0, 1, 0])
+
         // Trick to flip vertex normals on the generated geometry so we can display
         // our image / video on the inside of the sphere
         skySphere.scale = .init(x: 1, y: 1, z: -1)
