@@ -199,12 +199,12 @@ def Xform "Root"
                 float inputs:in.connect = </Root/TerrainMaterial/Steepness_Factor/Separate3.outputs:outy>
                 float inputs:inhigh
                 float inputs:inlow = 0.7
-                float inputs:outhigh = 1
+                float inputs:outhigh = 0.75
                 float inputs:outlow = 0
                 float outputs:out
                 float2 ui:nodegraph:node:pos = (464.6914, 92.97656)
                 float2 ui:nodegraph:node:size = (98, 217)
-                int ui:nodegraph:node:stackingOrder = 336
+                int ui:nodegraph:node:stackingOrder = 340
                 string[] ui:nodegraph:realitykit:node:attributesShowingChildren = []
             }
 

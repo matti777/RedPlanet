@@ -2,9 +2,13 @@
 
 A small demo application for Apple VisionOS that demostrates geometry generated in code as well as the use of custom materials using [ShaderGraphMaterial](TBD).
 
-TODO: add links + explanation for how shader graph materials work.
-
 Developed in the spirit of the old PC demo "mars".
+
+# Terrain generation
+
+The terrain is generated using the classic [Diamond-Square](https://en.wikipedia.org/wiki/Diamond-square_algorithm) algorithm.
+
+Gaussian blur (using two-pass application of 1D convolution kernels) is applied to the height map data to reduce spike artifacts.
 
 # TerrainMaterial explained
 
@@ -16,7 +20,7 @@ NOTE: there seems to be a weird issue with these shader materials created in a a
 
 ## Disabling default scene lighting
 
-TBA
+To disable the default scene lighting, an Image Based Lighting component is used. The terrain material handles its own lighting based on the light source position.
 
 # License
 

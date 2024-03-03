@@ -27,6 +27,8 @@ final class HeightMap {
     private var minValue: Float = 0.0
     private var maxValue: Float = 0.0
 
+    private let gaussianKernel: [Float] = [0.006, 0.061, 0.242, 0.383, 0.242, 0.061, 0.006]
+
     enum Error: Swift.Error {
         case invalidArgument(message: String)
         case bitmapCreationFailed
@@ -52,16 +54,13 @@ final class HeightMap {
         }
         
         // Set corner values
-        let cornerValue = random.nextUniform() - 0.5
+        let cornerValue = (random.nextUniform() - 0.5) * 0.3
         self[0, 0] = cornerValue
         self[0, size - 1] = cornerValue
         self[size - 1, 0] = cornerValue
         self[size - 1, size - 1] = cornerValue
         
         let startTime = CFAbsoluteTimeGetCurrent()
-        defer {
-            print("HeightMap generation took \(CFAbsoluteTimeGetCurrent() - startTime)")
-        }
 
         var tileSize = mapSize - 1
         var randomness: Float = 1.0
@@ -71,7 +70,14 @@ final class HeightMap {
             tileSize /= 2
             randomness *= roughness
         }
-        
+
+        print("HeightMap generation took \(CFAbsoluteTimeGetCurrent() - startTime)")
+
+        let startTime2 = CFAbsoluteTimeGetCurrent()
+        self.values = convolveHorizontal()
+        self.values = convolveVertical()
+        print("Gaussian blur took \(CFAbsoluteTimeGetCurrent() - startTime2)")
+
         self.minValue = values.min()!
         self.maxValue = values.max()!
     }
@@ -358,6 +364,44 @@ final class HeightMap {
     
     // MARK: Private methods
     
+    private func convolveHorizontal() -> [Float] {
+        var result: [Float] = Array(repeating: 0, count: mapSize * mapSize)
+        let kernelSize = gaussianKernel.count
+        let halfSize = kernelSize / 2
+        
+        var valueOffset = 0
+        for y in stride(from: 0, through: mapSize - 1, by: 1) {
+            for x in stride(from: 0, through: mapSize - 1, by: 1) {
+                var value: Float = 0.0
+                for kx in stride(from: 0, through: kernelSize - 1, by: 1) {
+                    value += getValue(x: x + kx - halfSize, y: y) * gaussianKernel[kx]
+                }
+                result[valueOffset] = value
+                valueOffset += 1
+            }
+        }
+        
+        return result
+    }
+
+    private func convolveVertical() -> [Float] {
+        var result: [Float] = Array(repeating: 0, count: mapSize * mapSize)
+        let kernelSize = gaussianKernel.count
+        let halfSize = kernelSize / 2
+
+        for x in stride(from: 0, through: mapSize - 1, by: 1) {
+            for y in stride(from: 0, through: mapSize - 1, by: 1) {
+                var value: Float = 0.0
+                for ky in stride(from: 0, through: kernelSize - 1, by: 1) {
+                    value += getValue(x: x, y: y + ky - halfSize) * gaussianKernel[ky]
+                }
+                result[y * mapSize + x] = value
+            }
+        }
+        
+        return result
+    }
+
     /// Checks that the size value is in form of 2^n+1
     private func check(size: Int) throws {
         if size < 5 {

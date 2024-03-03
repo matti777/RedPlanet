@@ -12,9 +12,9 @@ import ARKit
 
 struct MainView: View {
     private let heightMapSize = 1025
-    private let heightMapRoughness: Float = 0.44
+    private let heightMapRoughness: Float = 0.49
     private let heightMapXZScale: Float = 0.5
-    private let heightMapYScale: Float = 150.0
+    private let heightMapYScale: Float = 130.0
     private let heightMapUVScale: Float = 150.0
     private let lightDirectionVector: SIMD3<Float> = [2, 1, 0]
 
@@ -27,6 +27,14 @@ struct MainView: View {
     /// Normalized position on the heightmap; start in the center (0.5, 0.5).
     @State private var normalizedPosition = SIMD2<Float>(0.5, 0.5)
 
+    var tap: some Gesture {
+        SpatialTapGesture()
+            .targetedToAnyEntity()
+            .onEnded { value in
+                log.debug("Tap gesture")
+            }
+    }
+    
     var drag: some Gesture {
         DragGesture()
             .targetedToAnyEntity()
@@ -104,7 +112,9 @@ struct MainView: View {
                     }
                 }
             }
-        }.gesture(drag)
+        }
+        .gesture(drag)
+        .gesture(tap)
     }
     
     /// Creates an ImageBasedLightComponent from a single-color source image. This can be
