@@ -364,6 +364,7 @@ final class HeightMap {
     
     // MARK: Private methods
     
+    /// Applias a 1D convolution kernel to the heightmap data in the horizontal dimension
     private func convolveHorizontal() -> [Float] {
         var result: [Float] = Array(repeating: 0, count: mapSize * mapSize)
         let kernelSize = gaussianKernel.count
@@ -384,18 +385,21 @@ final class HeightMap {
         return result
     }
 
+    /// Applias a 1D convolution kernel to the heightmap data in the vertical dimension
     private func convolveVertical() -> [Float] {
         var result: [Float] = Array(repeating: 0, count: mapSize * mapSize)
         let kernelSize = gaussianKernel.count
         let halfSize = kernelSize / 2
 
-        for x in stride(from: 0, through: mapSize - 1, by: 1) {
-            for y in stride(from: 0, through: mapSize - 1, by: 1) {
+        var valueOffset = 0
+        for y in stride(from: 0, through: mapSize - 1, by: 1) {
+            for x in stride(from: 0, through: mapSize - 1, by: 1) {
                 var value: Float = 0.0
                 for ky in stride(from: 0, through: kernelSize - 1, by: 1) {
                     value += getValue(x: x, y: y + ky - halfSize) * gaussianKernel[ky]
                 }
-                result[y * mapSize + x] = value
+                result[valueOffset] = value
+                valueOffset += 1
             }
         }
         
