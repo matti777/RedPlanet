@@ -54,7 +54,8 @@ final class HeightMap {
         }
         
         // Set corner values
-        let cornerValue = (random.nextUniform() - 0.5) * 0.3
+//        let cornerValue = (random.nextUniform() - 0.5) * 0.3
+        let cornerValue: Float = -0.1
         self[0, 0] = cornerValue
         self[0, size - 1] = cornerValue
         self[size - 1, 0] = cornerValue

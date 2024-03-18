@@ -11,15 +11,26 @@ import RealityKitContent
 import ARKit
 
 struct MainView: View {
+    private let arkitSession = ARKitSession()
+    private let worldTrackingProvider = WorldTrackingProvider()
+    
     private let heightMapSize = 1025
     private let heightMapRoughness: Float = 0.49
     private let heightMapXZScale: Float = 0.5
-    private let heightMapYScale: Float = 130.0
+    private let heightMapYScale: Float = 125.0
     private let heightMapUVScale: Float = 150.0
+    
+    /// Direction to the light source
     private let lightDirectionVector: SIMD3<Float> = [0.4, 0.5, -0.8]
 
-    private let arkitSession = ARKitSession()
-    private let worldTrackingProvider = WorldTrackingProvider()
+    /// Color for the distance fog
+    private let distanceFogColor = UIColor(red: 117, green: 71, blue: 78)
+
+    /// Distance fog configuration. The values are Z values as such per index:
+    /// 0: start of fog, effect increases by exp(distance)
+    /// 1: max fog distance, alpha starts to linearly approach 0.0
+    /// 2: where alpha reaches 0.0
+    private let distanceFogConfiguration: SIMD3<Float> = [-15, -60, -80]
     
     /// Controls the movement speed
     private let movementSpeedMultiplier: Float = 0.00000001
@@ -55,11 +66,15 @@ struct MainView: View {
 
             var material = try! await ShaderGraphMaterial(named: "/Root/TerrainMaterial", from: "Scene.usda", in: realityKitContentBundle)
             try! material.setParameter(name: "LightDirection", value: .simd3Float(lightDirectionVector))
+            try! material.setParameter(name: "DistanceFogColor", value: .color(distanceFogColor))
+            try! material.setParameter(name: "DistanceFogConfiguration", value: .simd3Float(distanceFogConfiguration))
+
             terrain.model!.materials = [material]
             terrain.components.set(createIBLComponent())
-            
+            terrain.components.set(ImageBasedLightReceiverComponent(imageBasedLight: terrain))
+
             content.add(terrain)
-            content.add(createCollisionBox())
+            content.add(CollisionBox())
         } update: { content in
             guard let terrain = content.entities.first(where: { entity in
                 entity.components.has(HeightMapComponent.self)
@@ -145,14 +160,14 @@ struct MainView: View {
         let size = CGSize(width: 20, height: 10)
         UIGraphicsBeginImageContextWithOptions(size, false, 0.0)
         let context = UIGraphicsGetCurrentContext()!
-        context.setFillColor(UIColor.white.cgColor)
+        context.setFillColor(UIColor.black.cgColor)
         context.fill(CGRect(origin: .zero, size: size))
         let cgImage = context.makeImage()!
         UIGraphicsEndImageContext()
 
         // Create the IBL component out of the image
         let resource = try! EnvironmentResource.generate(fromEquirectangular: cgImage)
-        let iblComponent = ImageBasedLightComponent(source: .single(resource), intensityExponent: 10.0)
+        let iblComponent = ImageBasedLightComponent(source: .single(resource), intensityExponent: 0.0)
 
         return iblComponent
     }
@@ -186,46 +201,5 @@ struct MainView: View {
         skySphere.scale = .init(x: 1, y: 1, z: -1)
         
         return skySphere
-    }
-    
-    /// Creates an invisible, enclosing box of collision shapes to capture gestures anywhere
-    private func createCollisionBox() -> Entity {
-        let size: Float = 30 // There is a maximum distance for input events so we cannot use 'infinity'
-        let thickness: Float = 0.001
-        let offset = size / 2
-        
-        let front = Entity()
-        front.components.set(CollisionComponent(shapes: [.generateBox(width: size, height: size, depth: thickness)]))
-        front.position.z = offset
-        
-        let back = Entity()
-        back.components.set(CollisionComponent(shapes: [.generateBox(width: size, height: size, depth: thickness)]))
-        back.position.z = -offset
-        
-        let right = Entity()
-        right.components.set(CollisionComponent(shapes: [.generateBox(width: thickness, height: size, depth: size)]))
-        right.position.x = offset
-        
-        let left = Entity()
-        left.components.set(CollisionComponent(shapes: [.generateBox(width: thickness, height: size, depth: size)]))
-        left.position.x = -offset
-        
-        let top = Entity()
-        top.components.set(CollisionComponent(shapes: [.generateBox(width: size, height: thickness, depth: size)]))
-        top.position.y = offset
-        
-        let bottom = Entity()
-        bottom.components.set(CollisionComponent(shapes: [.generateBox(width: size, height: thickness, depth: size)]))
-        bottom.position.y = -offset
-        
-        let entity = Entity()
-        let faces = [front, back, right, left, top, bottom]
-        
-        for face in faces {
-            face.components.set(InputTargetComponent())
-            entity.addChild(face)
-        }
-        
-        return entity
     }
 }
