@@ -27,11 +27,12 @@ struct MainView: View {
 //    private let distanceFogColor = UIColor(red: 0, green: 0, blue: 0)
     private let distanceFogColor = UIColor(red: 230, green: 230, blue: 230)
 
-    /// Distance from where distance fog starts from
-    private let distanceFogNearDistance: Float = -20
-    
     /// Distance after which the distance fog is at full thickness
-    private let distanceFogFarDistance: Float = -80
+    private let distanceFogFarDistance: Float = -100
+
+    /// Distance fog thickness factor. Given the fog factor equation f = e(-d * t) where t is the thickness
+    /// and d is the distance (from the camera), a value of t = 0.03 gives almost full fog at d = 100.0
+    private let distanceFogThickness: Float = 0.03
     
     /// Controls the movement speed
     private let movementSpeedMultiplier: Float = 0.00000001
@@ -68,8 +69,8 @@ struct MainView: View {
             var material = try! await ShaderGraphMaterial(named: "/Root/TerrainMaterial", from: "Scene.usda", in: realityKitContentBundle)
             try! material.setParameter(name: "LightDirection", value: .simd3Float(lightDirectionVector))
             try! material.setParameter(name: "DistanceFogColor", value: .color(distanceFogColor))
-            try! material.setParameter(name: "DistanceFogNearDistance", value: .float(distanceFogNearDistance))
             try! material.setParameter(name: "DistanceFogFarDistance", value: .float(distanceFogFarDistance))
+            try! material.setParameter(name: "DistanceFogThickness", value: .float(distanceFogThickness))
 
             terrain.model!.materials = [material]
             terrain.components.set(createIBLComponent())
