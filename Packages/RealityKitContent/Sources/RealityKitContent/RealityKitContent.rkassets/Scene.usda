@@ -12,22 +12,31 @@ def Xform "Root"
 {
     def Material "TerrainMaterial"
     {
-        color3f inputs:DistanceFogColor = (0.58105844, 0.1285525, 0.5745314) (
+        color3f inputs:DistanceFogColor = (0.921431, 0.92145264, 0.921441) (
             colorSpace = "srgb_texture"
             customData = {
                 dictionary realitykit = {
-                    float2 positionInSubgraph = (164.02734, 332.28516)
+                    float2 positionInSubgraph = (-24.698689, -172.37416)
                     float2 sizeInSubgraph = (179, 53)
-                    int stackingOrderInSubgraph = 497
+                    int stackingOrderInSubgraph = 519
                 }
             }
         )
-        float3 inputs:DistanceFogConfiguration = (0.02, -0.5, -0.8) (
+        float inputs:DistanceFogFarDistance = -3 (
             customData = {
                 dictionary realitykit = {
-                    float2 positionInSubgraph = (197.7461, 413.8789)
-                    float2 sizeInSubgraph = (230.5, 53)
-                    int stackingOrderInSubgraph = 512
+                    float2 positionInSubgraph = (-71.221985, -96.8267)
+                    float2 sizeInSubgraph = (219.5, 53)
+                    int stackingOrderInSubgraph = 531
+                }
+            }
+        )
+        float inputs:DistanceFogNearDistance = -0.1 (
+            customData = {
+                dictionary realitykit = {
+                    float2 positionInSubgraph = (-81.15493, -27.100523)
+                    float2 sizeInSubgraph = (230, 53)
+                    int stackingOrderInSubgraph = 526
                 }
             }
         )
@@ -42,10 +51,10 @@ def Xform "Root"
         )
         prepend token outputs:mtlx:surface.connect = </Root/TerrainMaterial/PreviewSurface.outputs:out>
         token outputs:realitykit:vertex
-        string[] ui:nodegraph:realitykit:node:attributesShowingChildren = ["outputs:mtlx:surface", "outputs:mtlx:surface"]
-        float2 ui:nodegraph:realitykit:subgraphOutputs:pos = (738.2617, 131.82422)
+        string[] ui:nodegraph:realitykit:node:attributesShowingChildren = ["outputs:mtlx:surface", "outputs:mtlx:surface", "outputs:mtlx:surface"]
+        float2 ui:nodegraph:realitykit:subgraphOutputs:pos = (771.90765, 94.00373)
         float2 ui:nodegraph:realitykit:subgraphOutputs:size = (181.5, 99)
-        int ui:nodegraph:realitykit:subgraphOutputs:stackingOrder = 469
+        int ui:nodegraph:realitykit:subgraphOutputs:stackingOrder = 529
 
         def Shader "PreviewSurface"
         {
@@ -58,13 +67,13 @@ def Xform "Root"
             float inputs:metallic
             float3 inputs:normal
             float inputs:occlusion
-            float inputs:opacity = 0
-            float inputs:opacity.connect = </Root/TerrainMaterial/Distance_Fog.outputs:Opacity>
+            float inputs:opacity = 1
+            float inputs:opacity.connect = None
             float inputs:roughness = 1
             token outputs:out
             float2 ui:nodegraph:node:pos = (537.044, 79.67989)
             float2 ui:nodegraph:node:size = (159.5, 307)
-            int ui:nodegraph:node:stackingOrder = 513
+            int ui:nodegraph:node:stackingOrder = 525
             string[] ui:nodegraph:realitykit:node:attributesShowingChildren = ["inputs:normal", "Advanced"]
         }
 
@@ -305,27 +314,37 @@ def Xform "Root"
                     dictionary realitykit = {
                         float2 positionInSubgraph = (146.11905, 134.50003)
                         float2 sizeInSubgraph = (179, 53)
-                        int stackingOrderInSubgraph = 1004
+                        int stackingOrderInSubgraph = 1018
                     }
                 }
             )
             color3f inputs:DistanceFogColor.connect = </Root/TerrainMaterial.inputs:DistanceFogColor>
-            float3 inputs:DistanceFogConfiguration = (0, 0, 0) (
+            float inputs:DistanceFogFarDistance = 0 (
                 customData = {
                     dictionary realitykit = {
-                        float2 positionInSubgraph = (-488.55078, 261.0547)
-                        float2 sizeInSubgraph = (230.5, 53)
-                        int stackingOrderInSubgraph = 990
+                        float2 positionInSubgraph = (-379.81793, 238.16074)
+                        float2 sizeInSubgraph = (219.5, 53)
+                        int stackingOrderInSubgraph = 1025
                     }
                 }
             )
-            float3 inputs:DistanceFogConfiguration.connect = </Root/TerrainMaterial.inputs:DistanceFogConfiguration>
+            float inputs:DistanceFogFarDistance.connect = </Root/TerrainMaterial.inputs:DistanceFogFarDistance>
+            float inputs:DistanceFogNearDistance = 0 (
+                customData = {
+                    dictionary realitykit = {
+                        float2 positionInSubgraph = (-380.02737, 322.87817)
+                        float2 sizeInSubgraph = (230, 53)
+                        int stackingOrderInSubgraph = 1019
+                    }
+                }
+            )
+            float inputs:DistanceFogNearDistance.connect = </Root/TerrainMaterial.inputs:DistanceFogNearDistance>
             color3f inputs:InputColor = (0, 0, 0) (
                 customData = {
                     dictionary realitykit = {
                         float2 positionInSubgraph = (141.5924, 41.920315)
                         float2 sizeInSubgraph = (133.5, 53)
-                        int stackingOrderInSubgraph = 974
+                        int stackingOrderInSubgraph = 1030
                     }
                 }
             )
@@ -337,15 +356,15 @@ def Xform "Root"
                     }
                 }
             )
-            float outputs:Opacity.connect = </Root/TerrainMaterial/Distance_Fog/Range_1.outputs:out>
+            float outputs:Opacity.connect = </Root/TerrainMaterial/Distance_Fog/Constant.outputs:out>
             color3f outputs:Output_Color.connect = </Root/TerrainMaterial/Distance_Fog/Mix.outputs:out>
             float2 ui:nodegraph:node:pos = (258.08023, 102.059685)
-            float2 ui:nodegraph:node:size = (186, 163)
-            int ui:nodegraph:node:stackingOrder = 514
-            string[] ui:nodegraph:realitykit:node:attributesShowingChildren = ["outputs:Output_Color", "outputs:Output_Color"]
-            float2 ui:nodegraph:realitykit:subgraphOutputs:pos = (407.7671, 347.42807)
-            float2 ui:nodegraph:realitykit:subgraphOutputs:size = (208.8452, 99)
-            int ui:nodegraph:realitykit:subgraphOutputs:stackingOrder = 1004
+            float2 ui:nodegraph:node:size = (188.5, 181)
+            int ui:nodegraph:node:stackingOrder = 530
+            string[] ui:nodegraph:realitykit:node:attributesShowingChildren = ["outputs:Output_Color", "outputs:Output_Color", "inputs:DistanceFogNearDistance"]
+            float2 ui:nodegraph:realitykit:subgraphOutputs:pos = (600.6421, 117.7601)
+            float2 ui:nodegraph:realitykit:subgraphOutputs:size = (208.5, 99)
+            int ui:nodegraph:realitykit:subgraphOutputs:stackingOrder = 1028
 
             def Shader "Exp"
             {
@@ -420,33 +439,21 @@ def Xform "Root"
                 string[] ui:nodegraph:realitykit:node:attributesShowingChildren = ["outputs:outz", "outputs:outz"]
             }
 
-            def Shader "Separate3_1"
-            {
-                uniform token info:id = "ND_separate3_vector3"
-                float3 inputs:in.connect = </Root/TerrainMaterial/Distance_Fog.inputs:DistanceFogConfiguration>
-                float outputs:outx
-                float outputs:outy
-                float outputs:outz
-                float2 ui:nodegraph:node:pos = (-273.8672, 298.1172)
-                float2 ui:nodegraph:node:size = (127.5, 145)
-                int ui:nodegraph:node:stackingOrder = 532
-            }
-
             def Shader "Range"
             {
                 uniform token info:id = "ND_range_float"
                 bool inputs:doclamp = 1
                 float inputs:gamma
                 float inputs:in.connect = </Root/TerrainMaterial/Distance_Fog/Separate3.outputs:outz>
-                float inputs:inhigh.connect = </Root/TerrainMaterial/Distance_Fog/Separate3_1.outputs:outx>
-                float inputs:inlow.connect = </Root/TerrainMaterial/Distance_Fog/Separate3_1.outputs:outy>
+                float inputs:inhigh.connect = </Root/TerrainMaterial/Distance_Fog.inputs:DistanceFogNearDistance>
+                float inputs:inlow.connect = </Root/TerrainMaterial/Distance_Fog.inputs:DistanceFogFarDistance>
                 float inputs:outhigh = 0
-                float inputs:outlow = -4
+                float inputs:outlow = -2
                 float outputs:out
                 float2 ui:nodegraph:node:pos = (-16.972702, 146.96808)
                 float2 ui:nodegraph:node:size = (98, 217)
-                int ui:nodegraph:node:stackingOrder = 1015
-                string[] ui:nodegraph:realitykit:node:attributesShowingChildren = ["inputs:outlow"]
+                int ui:nodegraph:node:stackingOrder = 1032
+                string[] ui:nodegraph:realitykit:node:attributesShowingChildren = ["inputs:outlow", "inputs:outlow", "inputs:outlow"]
             }
 
             def Shader "Mix"
@@ -458,24 +465,8 @@ def Xform "Root"
                 color3f outputs:out
                 float2 ui:nodegraph:node:pos = (376.64072, 122.17674)
                 float2 ui:nodegraph:node:size = (109, 145)
-                int ui:nodegraph:node:stackingOrder = 820
+                int ui:nodegraph:node:stackingOrder = 1029
                 string[] ui:nodegraph:realitykit:node:attributesShowingChildren = ["outputs:out"]
-            }
-
-            def Shader "Range_1"
-            {
-                uniform token info:id = "ND_range_float"
-                bool inputs:doclamp = 1
-                float inputs:gamma
-                float inputs:in.connect = </Root/TerrainMaterial/Distance_Fog/Separate3.outputs:outz>
-                float inputs:inhigh.connect = </Root/TerrainMaterial/Distance_Fog/Separate3_1.outputs:outy>
-                float inputs:inlow.connect = </Root/TerrainMaterial/Distance_Fog/Separate3_1.outputs:outz>
-                float inputs:outhigh
-                float inputs:outlow = 0.2
-                float outputs:out
-                float2 ui:nodegraph:node:pos = (-11.311535, 399.0088)
-                float2 ui:nodegraph:node:size = (103.5, 217)
-                int ui:nodegraph:node:stackingOrder = 1017
             }
         }
     }
@@ -489,7 +480,7 @@ def Xform "Root"
             bindMaterialAs = "weakerThanDescendants"
         )
         double size = 0.2
-        float3 xformOp:translate = (0.0064622276, 0.021576926, 0)
+        float3 xformOp:translate = (-0.010808997, 0.021576926, -0.016264498)
         uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
 
         def Material "DefaultMaterial"

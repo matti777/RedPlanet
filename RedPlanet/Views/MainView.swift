@@ -24,13 +24,14 @@ struct MainView: View {
     private let lightDirectionVector: SIMD3<Float> = [0.4, 0.5, -0.8]
 
     /// Color for the distance fog
-    private let distanceFogColor = UIColor(red: 117, green: 71, blue: 78)
+//    private let distanceFogColor = UIColor(red: 0, green: 0, blue: 0)
+    private let distanceFogColor = UIColor(red: 230, green: 230, blue: 230)
 
-    /// Distance fog configuration. The values are Z values as such per index:
-    /// 0: start of fog, effect increases by exp(distance)
-    /// 1: max fog distance, alpha starts to linearly approach 0.0
-    /// 2: where alpha reaches 0.0
-    private let distanceFogConfiguration: SIMD3<Float> = [-15, -60, -80]
+    /// Distance from where distance fog starts from
+    private let distanceFogNearDistance: Float = -20
+    
+    /// Distance after which the distance fog is at full thickness
+    private let distanceFogFarDistance: Float = -80
     
     /// Controls the movement speed
     private let movementSpeedMultiplier: Float = 0.00000001
@@ -67,7 +68,8 @@ struct MainView: View {
             var material = try! await ShaderGraphMaterial(named: "/Root/TerrainMaterial", from: "Scene.usda", in: realityKitContentBundle)
             try! material.setParameter(name: "LightDirection", value: .simd3Float(lightDirectionVector))
             try! material.setParameter(name: "DistanceFogColor", value: .color(distanceFogColor))
-            try! material.setParameter(name: "DistanceFogConfiguration", value: .simd3Float(distanceFogConfiguration))
+            try! material.setParameter(name: "DistanceFogNearDistance", value: .float(distanceFogNearDistance))
+            try! material.setParameter(name: "DistanceFogFarDistance", value: .float(distanceFogFarDistance))
 
             terrain.model!.materials = [material]
             terrain.components.set(createIBLComponent())
@@ -97,17 +99,17 @@ struct MainView: View {
             Task {
                 try! await arkitSession.run([worldTrackingProvider])
                 
-                // TODO check if we need this
-                for await update in worldTrackingProvider.anchorUpdates {
-                    switch update.event {
-                    case .added, .updated:
-                        // Update the app's understanding of this world anchor.
-                        print("Anchor position updated.")
-                    case .removed:
-                        // Remove content related to this anchor.
-                        print("Anchor position now unknown.")
-                    }
-                }
+//                // TODO check if we need this
+//                for await update in worldTrackingProvider.anchorUpdates {
+//                    switch update.event {
+//                    case .added, .updated:
+//                        // Update the app's understanding of this world anchor.
+//                        print("Anchor position updated.")
+//                    case .removed:
+//                        // Remove content related to this anchor.
+//                        print("Anchor position now unknown.")
+//                    }
+//                }
             }
         }
         .gesture(drag)
