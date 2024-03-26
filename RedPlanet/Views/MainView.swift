@@ -79,7 +79,7 @@ struct MainView: View {
             content.add(terrain)
             content.add(CollisionBox())
             
-            try! addTrees(terrain: terrain)
+//            try! terrain.addChild(createTrees())
         } update: { content in
             guard let terrain = content.entities.first(where: { entity in
                 entity.components.has(HeightMapComponent.self)
@@ -101,18 +101,6 @@ struct MainView: View {
         }.onAppear {
             Task {
                 try! await arkitSession.run([worldTrackingProvider])
-                
-//                // TODO check if we need this
-//                for await update in worldTrackingProvider.anchorUpdates {
-//                    switch update.event {
-//                    case .added, .updated:
-//                        // Update the app's understanding of this world anchor.
-//                        print("Anchor position updated.")
-//                    case .removed:
-//                        // Remove content related to this anchor.
-//                        print("Anchor position now unknown.")
-//                    }
-//                }
             }
         }
         .gesture(drag)
@@ -121,7 +109,7 @@ struct MainView: View {
     
     // MARK: Private methods
     
-    private func addTrees(terrain: Entity) throws {
+    private func createTrees() throws -> Entity {
         let entity = try Entity.load(named: "Tree_trunk", in: realityKitContentBundle)
         let modelEntity = entity.findEntity(named: "tree_trunk_model") as! ModelEntity
         let modelName = modelEntity.name
@@ -147,7 +135,8 @@ struct MainView: View {
         resourceContents.skeletons = modelEntity.model!.mesh.contents.skeletons
         let meshResource = try MeshResource.generate(from: resourceContents)
         let model = ModelEntity(mesh: meshResource, materials: modelEntity.model!.materials)
-        //TODO
+        
+        return model
     }
     
     private func handleDragMovement(dragVelocity: CGSize) {
