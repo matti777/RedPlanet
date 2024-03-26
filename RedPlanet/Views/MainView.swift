@@ -78,6 +78,8 @@ struct MainView: View {
 
             content.add(terrain)
             content.add(CollisionBox())
+            
+            try! addTrees(terrain: terrain)
         } update: { content in
             guard let terrain = content.entities.first(where: { entity in
                 entity.components.has(HeightMapComponent.self)
@@ -118,6 +120,35 @@ struct MainView: View {
     }
     
     // MARK: Private methods
+    
+    private func addTrees(terrain: Entity) throws {
+        let entity = try Entity.load(named: "Tree_trunk", in: realityKitContentBundle)
+        let modelEntity = entity.findEntity(named: "tree_trunk_model") as! ModelEntity
+        let modelName = modelEntity.name
+        
+        var instances: [MeshResource.Instance] = []
+        
+        for i in 1..<3 {
+            let instanceName = "\(modelName)-\(i)"
+            var instanceLocation = SIMD2<Float>(0.5, 0.5 - Float(i) * 0.01)
+
+            // TODO find the height from the map
+            
+            let instanceTransform = simd_float4x4()
+            
+            // Construct an instance of the model
+            instances.append(.init(id: instanceName, model: modelName, at: instanceTransform))
+        }
+        
+        // Create a model with a single mesh and multiple instances
+        var resourceContents = MeshResource.Contents()
+        resourceContents.instances = .init(instances)
+        resourceContents.models = modelEntity.model!.mesh.contents.models
+        resourceContents.skeletons = modelEntity.model!.mesh.contents.skeletons
+        let meshResource = try MeshResource.generate(from: resourceContents)
+        let model = ModelEntity(mesh: meshResource, materials: modelEntity.model!.materials)
+        //TODO
+    }
     
     private func handleDragMovement(dragVelocity: CGSize) {
         guard let deviceTransform = getDeviceTransform() else {
