@@ -12,6 +12,8 @@ Gaussian blur (using two-pass application of 1D convolution kernels) is applied 
 
 For a nice Shader Graph primer, see [this WWDC video](https://developer.apple.com/videos/play/wwdc2023/10202/).
 
+For the reference on all the supported node types, see [this page](https://developer.apple.com/documentation/shadergraph/).
+
 NOTE: there seems to be a weird issue with these shader materials created in a an USDx file; their textures _will not work_ in your app unless you create a dummy object in the USDx file (in Reality Composer Pro) _and bind your material_ to it! (Situation Xcode 15.3 Beta). You don't need to use the dummy object, it just needs to be there in the scene file and have your texture bound to it and then you can use your texture for whatever.
 
 ## Shader Basic Steps
