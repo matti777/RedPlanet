@@ -15,9 +15,9 @@ struct MainView: View {
     private let worldTrackingProvider = WorldTrackingProvider()
     
     private let heightMapSize = 1025
-    private let heightMapRoughness: Float = 0.49
+    private let heightMapRoughness: Float = 0.55
     private let heightMapXZScale: Float = 0.5
-    private let heightMapYScale: Float = 125.0
+    private let heightMapYScale: Float = 105.0
     private let heightMapUVScale: Float = 150.0
     
     /// Direction to the light source
@@ -27,12 +27,12 @@ struct MainView: View {
 //    private let distanceFogColor = UIColor(red: 0, green: 0, blue: 0)
     private let distanceFogColor = UIColor(red: 230, green: 230, blue: 230)
 
-    /// Distance after which the distance fog is at full thickness
-    private let distanceFogFarDistance: Float = -100
+    /// Distance after which the geometry is no longer rendered
+    private let distanceFogFarDistance: Float = -90
 
     /// Distance fog thickness factor. Given the fog factor equation f = e(-d * t) where t is the thickness
     /// and d is the distance (from the camera), a value of t = 0.03 gives almost full fog at d = 100.0
-    private let distanceFogThickness: Float = 0.03
+    private let distanceFogThickness: Float = 0.004
     
     /// Controls the movement speed
     private let movementSpeedMultiplier: Float = 0.00000001

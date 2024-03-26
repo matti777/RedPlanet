@@ -335,9 +335,9 @@ def Xform "Root"
             float inputs:DistanceFogThickness = 0 (
                 customData = {
                     dictionary realitykit = {
-                        float2 positionInSubgraph = (-195.1914, 256.28125)
+                        float2 positionInSubgraph = (-155.53516, 231.99219)
                         float2 sizeInSubgraph = (209, 53)
-                        int stackingOrderInSubgraph = 1175
+                        int stackingOrderInSubgraph = 1214
                     }
                 }
             )
@@ -379,69 +379,6 @@ def Xform "Root"
                 int ui:nodegraph:node:stackingOrder = 1045
             }
 
-            def NodeGraph "View_Space_position"
-            {
-                float3 outputs:View_Space_Position (
-                    customData = {
-                        dictionary realitykit = {
-                            int stackingOrderInSubgraph = 684
-                        }
-                    }
-                )
-                float3 outputs:View_Space_Position.connect = </Root/TerrainMaterial/Distance_Fog/View_Space_position/TransformMatrix.outputs:out>
-                float2 ui:nodegraph:node:pos = (-358.01822, 103.59766)
-                float2 ui:nodegraph:node:size = (185, 81)
-                int ui:nodegraph:node:stackingOrder = 1175
-                float2 ui:nodegraph:realitykit:subgraphOutputs:pos = (458.3125, 128.29688)
-                float2 ui:nodegraph:realitykit:subgraphOutputs:size = (250, 81)
-                int ui:nodegraph:realitykit:subgraphOutputs:stackingOrder = 690
-
-                def Shader "Position"
-                {
-                    uniform token info:id = "ND_position_vector3"
-                    string inputs:space = "world"
-                    float3 outputs:out
-                    float2 ui:nodegraph:node:pos = (-71.49609, 110.75)
-                    float2 ui:nodegraph:node:size = (133.5, 40)
-                    int ui:nodegraph:node:stackingOrder = 684
-                }
-
-                def Shader "SurfaceWorldToView"
-                {
-                    uniform token info:id = "ND_realitykit_surface_world_to_view"
-                    matrix4d outputs:worldToView
-                    float2 ui:nodegraph:node:pos = (-71.49609, 231.25)
-                    float2 ui:nodegraph:node:size = (215.5, 81)
-                    int ui:nodegraph:node:stackingOrder = 684
-                    string[] ui:nodegraph:realitykit:node:attributesShowingChildren = ["outputs:worldToView", "outputs:worldToView", "outputs:worldToView"]
-                }
-
-                def Shader "TransformMatrix"
-                {
-                    uniform token info:id = "ND_transformmatrix_vector3M4"
-                    float3 inputs:in.connect = </Root/TerrainMaterial/Distance_Fog/View_Space_position/Position.outputs:out>
-                    matrix4d inputs:mat.connect = </Root/TerrainMaterial/Distance_Fog/View_Space_position/SurfaceWorldToView.outputs:worldToView>
-                    float3 outputs:out
-                    float2 ui:nodegraph:node:pos = (172.5039, 140.75)
-                    float2 ui:nodegraph:node:size = (152.5, 127)
-                    int ui:nodegraph:node:stackingOrder = 687
-                    string[] ui:nodegraph:realitykit:node:attributesShowingChildren = ["outputs:out"]
-                }
-            }
-
-            def Shader "Separate3"
-            {
-                uniform token info:id = "ND_separate3_vector3"
-                float3 inputs:in.connect = </Root/TerrainMaterial/Distance_Fog/View_Space_position.outputs:View_Space_Position>
-                float outputs:outx
-                float outputs:outy
-                float outputs:outz
-                float2 ui:nodegraph:node:pos = (-131.45312, 127.109375)
-                float2 ui:nodegraph:node:size = (115.5, 145)
-                int ui:nodegraph:node:stackingOrder = 1175
-                string[] ui:nodegraph:realitykit:node:attributesShowingChildren = ["outputs:outz", "outputs:outz"]
-            }
-
             def Shader "Mix"
             {
                 uniform token info:id = "ND_mix_color3"
@@ -458,7 +395,7 @@ def Xform "Root"
             def Shader "Multiply"
             {
                 uniform token info:id = "ND_multiply_float"
-                float inputs:in1.connect = </Root/TerrainMaterial/Distance_Fog/Separate3.outputs:outz>
+                float inputs:in1.connect = </Root/TerrainMaterial/Distance_Fog/Distance_From_Camera.outputs:Subtract_out>
                 float inputs:in2.connect = </Root/TerrainMaterial/Distance_Fog.inputs:DistanceFogThickness>
                 float outputs:out
                 float2 ui:nodegraph:node:pos = (55.33203, 208.98438)
@@ -472,12 +409,75 @@ def Xform "Root"
                 float inputs:in1
                 float inputs:in2 = 1
                 float inputs:value1.connect = </Root/TerrainMaterial/Distance_Fog.inputs:DistanceFogFarDistance>
-                float inputs:value2.connect = </Root/TerrainMaterial/Distance_Fog/Separate3.outputs:outz>
+                float inputs:value2.connect = </Root/TerrainMaterial/Distance_Fog/Distance_From_Camera.outputs:Subtract_out>
                 float outputs:out
                 float2 ui:nodegraph:node:pos = (115.91797, -85.28125)
                 float2 ui:nodegraph:node:size = (109, 163)
                 int ui:nodegraph:node:stackingOrder = 1205
                 string[] ui:nodegraph:realitykit:node:attributesShowingChildren = ["inputs:value1"]
+            }
+
+            def NodeGraph "Distance_From_Camera"
+            {
+                prepend float outputs:Subtract_out.connect = </Root/TerrainMaterial/Distance_Fog/Distance_From_Camera/Subtract.outputs:out>
+                float2 ui:nodegraph:node:pos = (-161.89764, 46.695312)
+                float2 ui:nodegraph:node:size = (201, 81)
+                int ui:nodegraph:node:stackingOrder = 1217
+                float2 ui:nodegraph:realitykit:subgraphOutputs:pos = (821.5, 50)
+                float2 ui:nodegraph:realitykit:subgraphOutputs:size = (161, 81)
+
+                def Shader "Magnitude"
+                {
+                    uniform token info:id = "ND_magnitude_vector3"
+                    float3 inputs:in.connect = </Root/TerrainMaterial/Distance_Fog/Distance_From_Camera/Subtract_1.outputs:out>
+                    float outputs:out
+                    float2 ui:nodegraph:node:pos = (476, 50)
+                    float2 ui:nodegraph:node:size = (152, 40)
+                    int ui:nodegraph:node:stackingOrder = 1483
+                }
+
+                def Shader "Subtract"
+                {
+                    uniform token info:id = "ND_subtract_float"
+                    float inputs:in1.connect = None
+                    float inputs:in2.connect = </Root/TerrainMaterial/Distance_Fog/Distance_From_Camera/Magnitude.outputs:out>
+                    float outputs:out
+                    float2 ui:nodegraph:node:pos = (642.75, 50)
+                    float2 ui:nodegraph:node:size = (61.5, 36)
+                    int ui:nodegraph:node:stackingOrder = 1484
+                    string[] ui:nodegraph:realitykit:node:attributesShowingChildren = ["outputs:out"]
+                }
+
+                def Shader "Subtract_1"
+                {
+                    uniform token info:id = "ND_subtract_vector3"
+                    float3 inputs:in1.connect = </Root/TerrainMaterial/Distance_Fog/Distance_From_Camera/Position.outputs:out>
+                    float3 inputs:in2.connect = </Root/TerrainMaterial/Distance_Fog/Distance_From_Camera/CameraPosition.outputs:out>
+                    float3 outputs:out
+                    float2 ui:nodegraph:node:pos = (309.25, 50)
+                    float2 ui:nodegraph:node:size = (61.5, 36)
+                    int ui:nodegraph:node:stackingOrder = 1483
+                    string[] ui:nodegraph:realitykit:node:attributesShowingChildren = ["outputs:out"]
+                }
+
+                def Shader "Position"
+                {
+                    uniform token info:id = "ND_position_vector3"
+                    string inputs:space = "world"
+                    float3 outputs:out
+                    float2 ui:nodegraph:node:pos = (109.25, 20)
+                    float2 ui:nodegraph:node:size = (133.5, 40)
+                    int ui:nodegraph:node:stackingOrder = 1483
+                }
+
+                def Shader "CameraPosition"
+                {
+                    uniform token info:id = "ND_realitykit_cameraposition_vector3"
+                    float3 outputs:out
+                    float2 ui:nodegraph:node:pos = (109.25, 126.5)
+                    float2 ui:nodegraph:node:size = (218.5, 53)
+                    int ui:nodegraph:node:stackingOrder = 1483
+                }
             }
         }
     }
@@ -503,6 +503,8 @@ def Xform "Root"
             token outputs:mtlx:surface
             token outputs:realitykit:vertex
             prepend token outputs:surface.connect = </Root/Cube/DefaultMaterial/DefaultSurfaceShader.outputs:surface>
+            float2 ui:nodegraph:realitykit:subgraphOutputs:pos = (0, 109.5)
+            float2 ui:nodegraph:realitykit:subgraphOutputs:size = (181.5, 99)
 
             def Shader "DefaultSurfaceShader"
             {
