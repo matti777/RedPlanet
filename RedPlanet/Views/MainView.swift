@@ -83,16 +83,16 @@ struct MainView: View {
         } update: { content in
             guard let terrain = content.entities.first(where: { entity in
                 entity.components.has(HeightMapComponent.self)
-            }) as? ModelEntity else {
+            }) as? ModelEntity, let heightmap = terrain.heightMap else {
                 log.error("no terrain entity")
                 return
             }
 
-            // Get the (Vision Pro) device ("camera" / head) world position so we can compensate for it
+            // Get the device ("camera" / head) world position so we can compensate for it
             let deviceTransform = getDeviceTransform()!
             let devicePosition = deviceTransform[3]
             
-            let terrainSurfacePoint = try! HeightMap.getTerrainSurfacePoint(at: normalizedPosition, entity: terrain)
+            let terrainSurfacePoint = try! heightmap.getTerrainSurfacePoint(at: normalizedPosition)
             
             // Simulate a "virtual camera" (eg. moving on the terrain) by translating the terrain by the
             // "virtual camera" position on the terrain

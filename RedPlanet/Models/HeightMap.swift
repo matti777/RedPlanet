@@ -304,31 +304,6 @@ final class HeightMap {
         return entity
     }
     
-    /// Finds the geometry polygon at the normalized position ([0..1, 0..1]) on the heightmap and then
-    /// finds the Y coordinate on the polygon at that location.
-    static func getTerrainSurfacePoint(at normalizedPosition: SIMD2<Float>, entity: ModelEntity) throws -> SIMD3<Float> {
- 
-        let heightmap = entity.heightMap!
-        let polygon = try getTerrainPolygon(at: normalizedPosition, heightmap: heightmap)
-        
-        // Get geometry (x, z) positions by translating from [0,0..1,1] to [-0.5..0.5] and
-        // multiplying by the geometry scale
-        let geometryPosition = (normalizedPosition - [0.5, 0.5]) * (Float(heightmap.mapSize - 1) * heightmap.xzScale)
-        
-        // Form a downwards vector from a position (far) above the XZ position indicated
-        // by the normalized position
-        let lineOrigin = SIMD3<Float>(geometryPosition.x, 1e4, geometryPosition.y)
-        let lineDirection = SIMD3<Float>(0, -1, 0)
-        
-        // Find the intersection point between said downwards vector and the terrain geometry polygon
-        guard let intersectionPoint = linePolygonIntersection(polygon, lineOrigin, lineDirection) else {
-            log.error("failed to find intersection point")
-            return [geometryPosition.x, 0.0, geometryPosition.y]
-        }
-        
-        return intersectionPoint
-    }
-    
     // MARK: Private methods
     
     /// Applias a 1D convolution kernel to the heightmap data in the horizontal dimension
@@ -476,3 +451,66 @@ extension ModelEntity {
     }
 }
 
+extension HeightMapComponent {
+    /// Finds the geometry polygon at the normalized position ([0..1, 0..1])
+    func getTerrainPolygon(at normalizedPosition: SIMD2<Float>) throws -> Triangle {
+        if normalizedPosition.x <= 0 || normalizedPosition.x >= 1 ||
+            normalizedPosition.y <= 0 || normalizedPosition.y >= 1 {
+            log.error("invalid normalizedPosition: \(normalizedPosition)")
+            throw HeightMap.Error.invalidPosition
+        }
+        
+        // The co-ordinatesu,v are coordinates to the height map and will identify the map "square"
+        // made up of 2 triangles. Their fractional parts indicate the exact location on the "square" and thus
+        // can be used to find the correct triangle to look at for the height check.
+        let uf = normalizedPosition.x * Float(mapSize - 1)
+        let vf = normalizedPosition.y * Float(mapSize - 1)
+        let ufrac = uf.truncatingRemainder(dividingBy: 1.0)
+        let vfrac = vf.truncatingRemainder(dividingBy: 1.0)
+        let u = Int(floor(uf))
+        let v = Int(floor(vf))
+        
+        // Figure out of the triangle indices of the polygon at the normalized position.
+        // Each "square" on the heightmap (x * y) is made up of 2 triangles, 3 indices each.
+        let i0, i1, i2: Int
+        if ufrac + vfrac <= 1.0 {
+            // First triangle of the "square", the "upper left half"
+            i0 = v * mapSize + u
+            i1 = (v + 1) * mapSize + u
+            i2 = v * mapSize + (u + 1)
+        } else {
+            // Second triangle of the "square", the "bottom right half"
+            i0 = (v + 1) * mapSize + u
+            i1 = (v + 1) * mapSize + (u + 1)
+            i2 = v * mapSize + (u + 1)
+        }
+        
+        // Extract the polygon vertices (positions)
+        return Triangle(v0: positions[i0], v1: positions[i1], v2: positions[i2])
+    }
+    
+    
+    /// Finds the geometry polygon at the normalized position ([0..1, 0..1]) on the heightmap and then
+    /// finds the Y coordinate on the polygon at that location.
+    func getTerrainSurfacePoint(at normalizedPosition: SIMD2<Float>) throws -> SIMD3<Float> {
+        let polygon = try getTerrainPolygon(at: normalizedPosition)
+        
+        // Get geometry (x, z) positions by translating from [0,0..1,1] to [-0.5..0.5] and
+        // multiplying by the geometry scale
+        let geometryPosition = (normalizedPosition - [0.5, 0.5]) * (Float(mapSize - 1) * xzScale)
+        
+        // Form a downwards vector from a position (far) above the XZ position indicated
+        // by the normalized position
+        let lineOrigin = SIMD3<Float>(geometryPosition.x, 1e4, geometryPosition.y)
+        let lineDirection = SIMD3<Float>(0, -1, 0)
+        
+        // Find the intersection point between said downwards vector and the terrain geometry polygon
+        guard let intersectionPoint = linePolygonIntersection(polygon, lineOrigin, lineDirection) else {
+            log.error("failed to find intersection point")
+            return [geometryPosition.x, 0.0, geometryPosition.y]
+        }
+        
+        return intersectionPoint
+    }
+
+}

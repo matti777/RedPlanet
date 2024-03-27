@@ -13,43 +13,6 @@ struct Triangle {
     let v2: SIMD3<Float>
 }
 
-/// Finds the geometry polygon at the normalized position ([0..1, 0..1])
-func getTerrainPolygon(at normalizedPosition: SIMD2<Float>, heightmap: HeightMapComponent) throws -> Triangle {
-    if normalizedPosition.x <= 0 || normalizedPosition.x >= 1 ||
-        normalizedPosition.y <= 0 || normalizedPosition.y >= 1 {
-        log.error("invalid normalizedPosition: \(normalizedPosition)")
-        throw HeightMap.Error.invalidPosition
-    }
-    
-    // The co-ordinatesu,v are coordinates to the height map and will identify the map "square"
-    // made up of 2 triangles. Their fractional parts indicate the exact location on the "square" and thus
-    // can be used to find the correct triangle to look at for the height check.
-    let uf = normalizedPosition.x * Float(heightmap.mapSize - 1)
-    let vf = normalizedPosition.y * Float(heightmap.mapSize - 1)
-    let ufrac = uf.truncatingRemainder(dividingBy: 1.0)
-    let vfrac = vf.truncatingRemainder(dividingBy: 1.0)
-    let u = Int(floor(uf))
-    let v = Int(floor(vf))
-    
-    // Figure out of the triangle indices of the polygon at the normalized position.
-    // Each "square" on the heightmap (x * y) is made up of 2 triangles, 3 indices each.
-    let i0, i1, i2: Int
-    if ufrac + vfrac <= 1.0 {
-        // First triangle of the "square", the "upper left half"
-        i0 = v * heightmap.mapSize + u
-        i1 = (v + 1) * heightmap.mapSize + u
-        i2 = v * heightmap.mapSize + (u + 1)
-    } else {
-        // Second triangle of the "square", the "bottom right half"
-        i0 = (v + 1) * heightmap.mapSize + u
-        i1 = (v + 1) * heightmap.mapSize + (u + 1)
-        i2 = v * heightmap.mapSize + (u + 1)
-    }
-    
-    // Extract the polygon vertices (positions)
-    return Triangle(v0: heightmap.positions[i0], v1: heightmap.positions[i1], v2: heightmap.positions[i2])
-}
-
 /// Calculates the intersection point of a directional line ("ray") and a polygon (triangle)
 /// in 3D space, if any, using the Möller–Trumbore intersection algorithm.
 ///
