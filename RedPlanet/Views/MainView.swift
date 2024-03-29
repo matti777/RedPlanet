@@ -35,6 +35,9 @@ struct MainView: View {
     /// and d is the distance (from the camera), a value of t = 0.03 gives almost full fog at d = 100.0
     private let distanceFogThickness: Float = 0.004
     
+    /// Number of trees in the instance
+    private let numberOfTrees = 1000
+    
     /// Controls the movement speed
     private let movementSpeedMultiplier: Float = 0.00000001
     
@@ -118,10 +121,24 @@ struct MainView: View {
         let random = GKRandomSource.sharedRandom()
         var instances: [MeshResource.Instance] = []
         
-        for i in 1..<6 {
-            let instanceName = "\(modelName)-\(i)"
-            let instanceLocation = SIMD2<Float>(0.5, 0.5 - Float(i) * 0.005)
+        let treeBaseMaxY = heightmap.geometryMinY + ((heightmap.geometryMaxY - heightmap.geometryMinY) * 0.6)
+        
+        var treesAdded = 0
+        let startTime = CFAbsoluteTimeGetCurrent()
+
+        while treesAdded < numberOfTrees {
+            // Allocate a random location for the instance on the heightmap
+            let u = (random.nextUniform() * 0.9) + 0.05
+            let v = (random.nextUniform() * 0.9) + 0.05
+            let instanceLocation = SIMD2<Float>(u, v)
             var surfacePoint = try heightmap.getTerrainSurfacePoint(atNormalizedPosition: instanceLocation)
+            
+            // Only place trees into valleys, aka the low parts of the heightmap
+            if surfacePoint.y > treeBaseMaxY {
+                continue
+            }
+            
+            // Sink the tree into the ground a little bit so its roots don't show
             surfacePoint.y -= 0.1
             
             var instanceTransform = Transform(translation: surfacePoint)
@@ -134,13 +151,14 @@ struct MainView: View {
             instanceTransform.rotation *= .init(angle: -.pi / 2, axis: [1, 0, 0])
 
             // Add random scaling
-            let scale = 1.0 + (random.nextUniform() * 0.3)
+            let scale = 1.0 + (random.nextUniform() * 0.6)
             instanceTransform.scale = [scale, scale, scale]
             
             // Construct an instance of the model
-            instances.append(.init(id: instanceName, model: modelName, at: instanceTransform.matrix))
+            instances.append(.init(id: "\(modelName)-\(treesAdded)", model: modelName, at: instanceTransform.matrix))
+            treesAdded += 1
         }
-        
+
         // Create a model with a single mesh and multiple instances
         var resourceContents = MeshResource.Contents()
         resourceContents.instances = .init(instances)
@@ -148,7 +166,9 @@ struct MainView: View {
         resourceContents.skeletons = modelEntity.model!.mesh.contents.skeletons
         let meshResource = try MeshResource.generate(from: resourceContents)
         let model = ModelEntity(mesh: meshResource, materials: modelEntity.model!.materials)
-        
+        log.debug("Created trees with \(model.model!.mesh.contents.instances.count) instances")
+        log.debug("Tree instance creation took \(CFAbsoluteTimeGetCurrent() - startTime)")
+
         return model
     }
     

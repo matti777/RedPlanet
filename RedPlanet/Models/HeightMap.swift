@@ -206,8 +206,10 @@ final class HeightMap {
         var positionIndex = 0
         
         let xzMinPos = -((Float(mapSize - 1) / 2.0) * xzScale)
+        let yMinPos = minValue * yScale * normalizationScaler
+        let yMaxPos = maxValue * yScale * normalizationScaler
         var zoffset = xzMinPos
-        log.debug("Will generate geometry in XZ plane [\(xzMinPos)..\(-xzMinPos)] and Y direction [\(self.minValue * yScale * normalizationScaler)..\(self.maxValue * yScale * normalizationScaler)]")
+        log.debug("Will generate geometry in XZ plane [\(xzMinPos)..\(-xzMinPos)] and Y direction [\(yMinPos)..\(yMaxPos)]")
         
         let uvStep = (1.0 / Float(mapSize - 1)) * uvScale
         var v: Float = 0.0
@@ -296,7 +298,7 @@ final class HeightMap {
         let entity = ModelEntity()
         entity.components.set(ModelComponent(mesh: try .generateFrom(name: HeightMap.heightMapModelName, positions: positions, normals: vertexNormals, uvs: uvs, indices: indices), materials: [SimpleMaterial()]))
 
-        entity.components.set(HeightMapComponent(mapSize: mapSize, xzScale: xzScale, positions: positions))
+        entity.components.set(HeightMapComponent(mapSize: mapSize, xzScale: xzScale, geometryMinY: yMinPos, geometryMaxY: yMaxPos, positions: positions))
         
         log.debug("entity creation took \(CFAbsoluteTimeGetCurrent() - startTime3)")
 
@@ -441,6 +443,8 @@ final class HeightMap {
 struct HeightMapComponent: Component, Equatable, Codable {
     let mapSize: Int
     let xzScale: Float
+    let geometryMinY: Float
+    let geometryMaxY: Float
     let positions: [SIMD3<Float>]
 }
 
