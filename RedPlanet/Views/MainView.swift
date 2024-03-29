@@ -121,8 +121,8 @@ struct MainView: View {
         for i in 1..<6 {
             let instanceName = "\(modelName)-\(i)"
             let instanceLocation = SIMD2<Float>(0.5, 0.5 - Float(i) * 0.005)
-            let surfacePoint = try heightmap.getTerrainSurfacePoint(atNormalizedPosition: instanceLocation)
-            print("Creating instance at surfacePoint = \(surfacePoint)")
+            var surfacePoint = try heightmap.getTerrainSurfacePoint(atNormalizedPosition: instanceLocation)
+            surfacePoint.y -= 0.1
             
             var instanceTransform = Transform(translation: surfacePoint)
 
@@ -133,7 +133,9 @@ struct MainView: View {
             // Orientate the model upright
             instanceTransform.rotation *= .init(angle: -.pi / 2, axis: [1, 0, 0])
 
-            // TODO add random scaling
+            // Add random scaling
+            let scale = 1.0 + (random.nextUniform() * 0.3)
+            instanceTransform.scale = [scale, scale, scale]
             
             // Construct an instance of the model
             instances.append(.init(id: instanceName, model: modelName, at: instanceTransform.matrix))
