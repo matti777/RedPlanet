@@ -22,10 +22,9 @@ struct MainView: View {
     private let heightMapUVScale: Float = 150.0
     
     /// Direction to the light source
-    private let lightDirectionVector: SIMD3<Float> = [0.4, 0.5, -0.8]
+    private let lightDirectionVector: SIMD3<Float> = [1.0, 0.5, -0.8]
 
     /// Color for the distance fog
-//    private let distanceFogColor = UIColor(red: 0, green: 0, blue: 0)
     private let distanceFogColor = UIColor(red: 230, green: 230, blue: 230)
 
     /// Distance after which the geometry is no longer rendered
@@ -47,14 +46,6 @@ struct MainView: View {
     /// Normalized position on the heightmap; start in the center (0.5, 0.5).
     @State private var normalizedPosition = SIMD2<Float>(0.5, 0.5)
 
-    var tap: some Gesture {
-        SpatialTapGesture()
-            .targetedToAnyEntity()
-            .onEnded { value in
-                log.debug("Tap gesture")
-            }
-    }
-    
     var drag: some Gesture {
         DragGesture()
             .targetedToAnyEntity()
@@ -67,23 +58,33 @@ struct MainView: View {
         RealityView { content in
             content.add(createSkySphere())
             
+            // Create our height map + generate the terrain object from it
             let heightMap = try! HeightMap(size: heightMapSize, roughness: heightMapRoughness)
             let terrain = try! heightMap.createEntity(xzScale: heightMapXZScale, yScale: heightMapYScale, uvScale: heightMapUVScale)
 
-            var material = try! await ShaderGraphMaterial(named: "/Root/TerrainMaterial", from: "Scene.usda", in: realityKitContentBundle)
-            try! material.setParameter(name: "LightDirection", value: .simd3Float(lightDirectionVector))
-            try! material.setParameter(name: "DistanceFogColor", value: .color(distanceFogColor))
-            try! material.setParameter(name: "DistanceFogFarDistance", value: .float(distanceFogFarDistance))
-            try! material.setParameter(name: "DistanceFogThickness", value: .float(distanceFogThickness))
+            var terrainMaterial = try! await ShaderGraphMaterial(named: "/Root/TerrainMaterial", from: "Scene.usda", in: realityKitContentBundle)
+            try! terrainMaterial.setParameter(name: "LightDirection", value: .simd3Float(lightDirectionVector))
+            try! terrainMaterial.setParameter(name: "DistanceFogColor", value: .color(distanceFogColor))
+            try! terrainMaterial.setParameter(name: "DistanceFogFarDistance", value: .float(distanceFogFarDistance))
+            try! terrainMaterial.setParameter(name: "DistanceFogThickness", value: .float(distanceFogThickness))
 
-            terrain.model!.materials = [material]
+            terrain.model!.materials = [terrainMaterial]
             terrain.components.set(createIBLComponent())
             terrain.components.set(ImageBasedLightReceiverComponent(imageBasedLight: terrain))
-
             content.add(terrain)
+
+            // Add trees via instanced geometry
+            let trees = try! createTrees(heightmap: terrain.heightMap!)
+
+            var treeMaterial = try! await ShaderGraphMaterial(named: "/Root/TreeMaterial", from: "Scene.usda", in: realityKitContentBundle)
+            try! treeMaterial.setParameter(name: "LightDirection", value: .simd3Float(lightDirectionVector))
+            try! treeMaterial.setParameter(name: "DistanceFogColor", value: .color(distanceFogColor))
+            try! treeMaterial.setParameter(name: "DistanceFogFarDistance", value: .float(distanceFogFarDistance))
+            try! treeMaterial.setParameter(name: "DistanceFogThickness", value: .float(distanceFogThickness))
+            terrain.addChild(trees)
+
+            // Finally, add a collision box that will receive our drag events
             content.add(CollisionBox())
-            
-            try! terrain.addChild(createTrees(heightmap: terrain.heightMap!))
         } update: { content in
             guard let terrain = content.entities.first(where: { entity in
                 entity.components.has(HeightMapComponent.self)
@@ -108,7 +109,6 @@ struct MainView: View {
             }
         }
         .gesture(drag)
-        .gesture(tap)
     }
     
     // MARK: Private methods
@@ -151,7 +151,7 @@ struct MainView: View {
             instanceTransform.rotation *= .init(angle: -.pi / 2, axis: [1, 0, 0])
 
             // Add random scaling
-            let scale = 1.0 + (random.nextUniform() * 0.6)
+            let scale = 1.0 + (random.nextUniform() * 1.6)
             instanceTransform.scale = [scale, scale, scale]
             
             // Construct an instance of the model
@@ -250,7 +250,7 @@ struct MainView: View {
         
         // Rotate the sky so that the star (light source) is in the desired position in the sky
         skySphere.orientation *= simd_quatf(angle: Float(Angle(degrees: 30).radians), axis: [1, 0, 0])
-        skySphere.orientation *= simd_quatf(angle: Float(Angle(degrees: 160).radians), axis: [0, 1, 0])
+        skySphere.orientation *= simd_quatf(angle: Float(Angle(degrees: 150).radians), axis: [0, 1, 0])
 
         // Trick to flip vertex normals on the generated geometry so we can display
         // our image / video on the inside of the sphere
