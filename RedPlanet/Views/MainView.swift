@@ -9,6 +9,7 @@ import SwiftUI
 import RealityKit
 import RealityKitContent
 import ARKit
+import GameplayKit
 
 struct MainView: View {
     private let arkitSession = ARKitSession()
@@ -79,7 +80,7 @@ struct MainView: View {
             content.add(terrain)
             content.add(CollisionBox())
             
-//            try! terrain.addChild(createTrees())
+            try! terrain.addChild(createTrees(heightmap: terrain.heightMap!))
         } update: { content in
             guard let terrain = content.entities.first(where: { entity in
                 entity.components.has(HeightMapComponent.self)
@@ -92,7 +93,7 @@ struct MainView: View {
             let deviceTransform = getDeviceTransform()!
             let devicePosition = deviceTransform[3]
             
-            let terrainSurfacePoint = try! heightmap.getTerrainSurfacePoint(at: normalizedPosition)
+            let terrainSurfacePoint = try! heightmap.getTerrainSurfacePoint(atNormalizedPosition: normalizedPosition)
             
             // Simulate a "virtual camera" (eg. moving on the terrain) by translating the terrain by the
             // "virtual camera" position on the terrain
@@ -109,23 +110,33 @@ struct MainView: View {
     
     // MARK: Private methods
     
-    private func createTrees() throws -> Entity {
+    private func createTrees(heightmap: HeightMapComponent) throws -> Entity {
         let entity = try Entity.load(named: "Tree_trunk", in: realityKitContentBundle)
         let modelEntity = entity.findEntity(named: "tree_trunk_model") as! ModelEntity
         let modelName = modelEntity.name
         
+        let random = GKRandomSource.sharedRandom()
         var instances: [MeshResource.Instance] = []
         
-        for i in 1..<3 {
+        for i in 1..<6 {
             let instanceName = "\(modelName)-\(i)"
-            var instanceLocation = SIMD2<Float>(0.5, 0.5 - Float(i) * 0.01)
-
-            // TODO find the height from the map
+            let instanceLocation = SIMD2<Float>(0.5, 0.5 - Float(i) * 0.005)
+            let surfacePoint = try heightmap.getTerrainSurfacePoint(atNormalizedPosition: instanceLocation)
+            print("Creating instance at surfacePoint = \(surfacePoint)")
             
-            let instanceTransform = simd_float4x4()
+            var instanceTransform = Transform(translation: surfacePoint)
+
+            // Introduce random rotation around y axis to each instance
+            let yawAngle = (random.nextUniform() - 0.5) * .pi
+            instanceTransform.rotation *= .init(angle: yawAngle, axis: [0, 1, 0])
+            
+            // Orientate the model upright
+            instanceTransform.rotation *= .init(angle: -.pi / 2, axis: [1, 0, 0])
+
+            // TODO add random scaling
             
             // Construct an instance of the model
-            instances.append(.init(id: instanceName, model: modelName, at: instanceTransform))
+            instances.append(.init(id: instanceName, model: modelName, at: instanceTransform.matrix))
         }
         
         // Create a model with a single mesh and multiple instances

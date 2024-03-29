@@ -19,7 +19,7 @@ import GameplayKit
 final class HeightMap {
     private static let heightMapModelName = "HeightMap"
     
-    private let random: GKRandomSource
+    private let random = GKRandomSource.sharedRandom()
     
     private var values: [Float]
     private let mapSize: Int
@@ -43,7 +43,6 @@ final class HeightMap {
     ///   - size: Length / width of the generated map. The value must be 2^n+1 where n = positive integer.
     ///   - roughness: Determines the roughness of the terrain. Must be [0..1].
     init(size: Int, roughness: Float) throws {
-        self.random = GKRandomSource.sharedRandom()
         self.mapSize = size
         self.values = Array(repeating: 0, count: size * size)
         
@@ -489,15 +488,18 @@ extension HeightMapComponent {
         return Triangle(v0: positions[i0], v1: positions[i1], v2: positions[i2])
     }
     
+    /// Returns geometry (x, z) positions by translating from [0,0..1,1] to [-0.5..0.5] and
+    /// multiplying by the geometry scale
+    func getGeometryPosition(forNormalizedPosition normalizedPosition: SIMD2<Float>) -> SIMD2<Float> {
+        return (normalizedPosition - [0.5, 0.5]) * (Float(mapSize - 1) * xzScale)
+    }
     
     /// Finds the geometry polygon at the normalized position ([0..1, 0..1]) on the heightmap and then
     /// finds the Y coordinate on the polygon at that location.
-    func getTerrainSurfacePoint(at normalizedPosition: SIMD2<Float>) throws -> SIMD3<Float> {
+    func getTerrainSurfacePoint(atNormalizedPosition normalizedPosition: SIMD2<Float>) throws -> SIMD3<Float> {
         let polygon = try getTerrainPolygon(at: normalizedPosition)
         
-        // Get geometry (x, z) positions by translating from [0,0..1,1] to [-0.5..0.5] and
-        // multiplying by the geometry scale
-        let geometryPosition = (normalizedPosition - [0.5, 0.5]) * (Float(mapSize - 1) * xzScale)
+        let geometryPosition = getGeometryPosition(forNormalizedPosition: normalizedPosition)
         
         // Form a downwards vector from a position (far) above the XZ position indicated
         // by the normalized position
