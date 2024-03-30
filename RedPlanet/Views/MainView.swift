@@ -46,7 +46,15 @@ struct MainView: View {
     
     /// Normalized position on the heightmap; start in the center (0.5, 0.5).
     @State private var normalizedPosition = SIMD2<Float>(0.5, 0.5)
+    
+    @State private var attachmentText = "Generating geometry.."
+    @State private var attachmentOpen = true
+    
+    @State private var terrainEntity: ModelEntity? = nil
+    @State private var terrainMaterial: ShaderGraphMaterial? = nil
+    @State private var treeMaterial: ShaderGraphMaterial? = nil
 
+    /// Manages the collision box drag
     private var collisionBoxDragState = CollisionBoxDragState()
     
     var drag: some Gesture {
@@ -61,48 +69,63 @@ struct MainView: View {
     }
     
     var body: some View {
-        RealityView { content in
+        RealityView { content, attachments in
+            // Our 'skybox'
             content.add(createSkySphere())
             
-            // Create our height map + generate the terrain object from it
-            let heightMap = try! HeightMap(size: heightMapSize, roughness: heightMapRoughness)
-            let terrain = try! heightMap.createEntity(xzScale: heightMapXZScale, yScale: heightMapYScale, uvScale: heightMapUVScale)
+            if let attachment = attachments.entity(for: "info_attachment") {
+                attachment.position = [0, 1, -0.5]
+                content.add(attachment)
+            }
+            
+            // Load our custom material for the terrain
+            terrainMaterial = try! await ShaderGraphMaterial(named: "/Root/TerrainMaterial", from: "Scene.usda", in: realityKitContentBundle)
+            try! terrainMaterial!.setParameter(name: "LightDirection", value: .simd3Float(lightDirectionVector))
+            try! terrainMaterial!.setParameter(name: "DistanceFogColor", value: .color(distanceFogColor))
+            try! terrainMaterial!.setParameter(name: "DistanceFogFarDistance", value: .float(distanceFogFarDistance))
+            try! terrainMaterial!.setParameter(name: "DistanceFogThickness", value: .float(distanceFogThickness))
 
-            var terrainMaterial = try! await ShaderGraphMaterial(named: "/Root/TerrainMaterial", from: "Scene.usda", in: realityKitContentBundle)
-            try! terrainMaterial.setParameter(name: "LightDirection", value: .simd3Float(lightDirectionVector))
-            try! terrainMaterial.setParameter(name: "DistanceFogColor", value: .color(distanceFogColor))
-            try! terrainMaterial.setParameter(name: "DistanceFogFarDistance", value: .float(distanceFogFarDistance))
-            try! terrainMaterial.setParameter(name: "DistanceFogThickness", value: .float(distanceFogThickness))
-            terrain.model!.materials = [terrainMaterial]
-            let iblComponent = createIBLComponent()
-            terrain.components.set(iblComponent)
-            terrain.components.set(ImageBasedLightReceiverComponent(imageBasedLight: terrain))
-            content.add(terrain)
+            // Load our custom material for the trees
+            treeMaterial = try! await ShaderGraphMaterial(named: "/Root/TreeMaterial", from: "Scene.usda", in: realityKitContentBundle)
+            try! treeMaterial!.setParameter(name: "LightDirection", value: .simd3Float(lightDirectionVector))
+            try! treeMaterial!.setParameter(name: "DistanceFogColor", value: .color(distanceFogColor))
+            try! treeMaterial!.setParameter(name: "DistanceFogFarDistance", value: .float(distanceFogFarDistance))
+            try! treeMaterial!.setParameter(name: "DistanceFogThickness", value: .float(distanceFogThickness))
+        } update: { content, attachments in
+            if let terrain = terrainEntity,
+               let terrainMaterial = terrainMaterial,
+               let treeMaterial = treeMaterial {
+                log.debug("Adding geometry to the scene..")
+                terrain.model!.materials = [terrainMaterial]
+                let iblComponent = createIBLComponent()
+                terrain.components.set(iblComponent)
+                terrain.components.set(ImageBasedLightReceiverComponent(imageBasedLight: terrain))
+                content.add(terrain)
+                
+                // Add trees via instanced geometry
+                let trees = try! createTrees(heightmap: terrain.heightMap!)
+                
+                trees.model!.materials = [treeMaterial]
+                trees.components.set(iblComponent)
+                trees.components.set(ImageBasedLightReceiverComponent(imageBasedLight: terrain))
+                trees.components.set(GroundingShadowComponent(castsShadow: true))
+                terrain.addChild(trees)
+                
+                // Finally, add a collision box that will receive our drag events
+                content.add(CollisionBox())
 
-            // Add trees via instanced geometry
-            let trees = try! createTrees(heightmap: terrain.heightMap!)
-
-            var treeMaterial = try! await ShaderGraphMaterial(named: "/Root/TreeMaterial", from: "Scene.usda", in: realityKitContentBundle)
-            try! treeMaterial.setParameter(name: "LightDirection", value: .simd3Float(lightDirectionVector))
-            try! treeMaterial.setParameter(name: "DistanceFogColor", value: .color(distanceFogColor))
-            try! treeMaterial.setParameter(name: "DistanceFogFarDistance", value: .float(distanceFogFarDistance))
-            try! treeMaterial.setParameter(name: "DistanceFogThickness", value: .float(distanceFogThickness))
-            trees.model!.materials = [treeMaterial]
-            trees.components.set(iblComponent)
-            trees.components.set(ImageBasedLightReceiverComponent(imageBasedLight: terrain))
-            trees.components.set(GroundingShadowComponent(castsShadow: true))
-            terrain.addChild(trees)
-
-            // Finally, add a collision box that will receive our drag events
-            content.add(CollisionBox())
-        } update: { content in
+                Task {
+                    terrainEntity = nil
+                }
+            }
+            
             guard let terrain = content.entities.first(where: { entity in
                 entity.components.has(HeightMapComponent.self)
             }) as? ModelEntity, let heightmap = terrain.heightMap else {
                 log.error("no terrain entity")
                 return
             }
-
+            
             // Get the device ("camera" / head) world position so we can compensate for it
             var devicePositionY: Float = 1.5
             
@@ -110,6 +133,10 @@ struct MainView: View {
                 devicePositionY = deviceTransform[3].y
             }
             
+            if let attachment = attachments.entity(for: "info_attachment") {
+                attachment.position.y = devicePositionY
+            }
+
             guard let terrainSurfacePoint = try? heightmap.getTerrainSurfacePoint(atNormalizedPosition: normalizedPosition) else {
                 log.error("Could not get surface point")
                 return
@@ -120,17 +147,46 @@ struct MainView: View {
             let cameraLocation = SIMD3<Float>(terrainSurfacePoint.x, terrainSurfacePoint.y + devicePositionY, terrainSurfacePoint.z)
             let cameraTransform = Transform(translation: cameraLocation)
             terrain.transform = Transform(matrix: cameraTransform.matrix.inverse)
-//            terrain.position = -terrainSurfacePoint
-//            terrain.position.y += devicePositionY - 0.3
-        }.onAppear {
-            Task {
-                try! await arkitSession.run([worldTrackingProvider])
+        } attachments: {
+            Attachment(id: "info_attachment") {
+                InfoAttachmentView(text: $attachmentText, show: $attachmentOpen)
+                    .frame(width: 350, height: 220)
+                    .glassBackgroundEffect()
+                    .opacity(attachmentOpen ? 1.0 : 0.0)
             }
+        }
+        .task {
+            try! await arkitSession.run([worldTrackingProvider])
+        }
+        .task {
+            generateGeometry()
         }
         .gesture(drag)
     }
     
     // MARK: Private methods
+    
+    private func generateGeometry() {
+        DispatchQueue.global(qos: .userInitiated).async {
+            // Create our height map + generate the terrain object from it
+            let heightMap = try! HeightMap(size: heightMapSize, roughness: heightMapRoughness)
+            let terrain = try! heightMap.createEntity(xzScale: heightMapXZScale, yScale: heightMapYScale, uvScale: heightMapUVScale)
+            
+            DispatchQueue.main.async {
+                log.debug("Geometry generated, ready to add to the scene")
+                terrainEntity = terrain
+                let heightmap = terrain.heightMap!
+                attachmentText = "Geometry generated:\n\nVertices:\t\(heightmap.numVertices)\nFaces:\t\t\(heightmap.numFaces)"
+                
+                Task { @MainActor in
+                    try await Task.sleep(for: .seconds(7.5))
+                    withAnimation(.easeIn) {
+                        attachmentOpen = false
+                    }
+                }
+            }
+        }
+    }
     
     private func createTrees(heightmap: HeightMapComponent) throws -> ModelEntity {
         let entity = try Entity.load(named: "Tree_trunk", in: realityKitContentBundle)

@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		490C27722BB853D600B06B0F /* InfoAttachmentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 490C27712BB853D600B06B0F /* InfoAttachmentView.swift */; };
 		494C23992BB3585F002091F1 /* GeometryMath.swift in Sources */ = {isa = PBXBuildFile; fileRef = 494C23982BB3585F002091F1 /* GeometryMath.swift */; };
 		4967118E2B77884800F3337E /* RealityKitContent in Frameworks */ = {isa = PBXBuildFile; productRef = 4967118D2B77884800F3337E /* RealityKitContent */; };
 		496711902B77884800F3337E /* RedPlanetApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4967118F2B77884800F3337E /* RedPlanetApp.swift */; };
@@ -31,6 +32,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		490C27712BB853D600B06B0F /* InfoAttachmentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InfoAttachmentView.swift; sourceTree = "<group>"; };
 		494C23982BB3585F002091F1 /* GeometryMath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeometryMath.swift; sourceTree = "<group>"; };
 		496711882B77884800F3337E /* RedPlanet.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RedPlanet.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		4967118C2B77884800F3337E /* RealityKitContent */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = RealityKitContent; sourceTree = "<group>"; };
@@ -138,6 +140,7 @@
 			isa = PBXGroup;
 			children = (
 				496711B02B7788CB00F3337E /* MainView.swift */,
+				490C27712BB853D600B06B0F /* InfoAttachmentView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -266,6 +269,7 @@
 				496711902B77884800F3337E /* RedPlanetApp.swift in Sources */,
 				496711B72B77890300F3337E /* MeshResourceExtensions.swift in Sources */,
 				49FA16DC2BA8DF6B007B85C0 /* CollisionBox.swift in Sources */,
+				490C27722BB853D600B06B0F /* InfoAttachmentView.swift in Sources */,
 				494C23992BB3585F002091F1 /* GeometryMath.swift in Sources */,
 				496711B52B7788F900F3337E /* HeightMap.swift in Sources */,
 				496711B12B7788CB00F3337E /* MainView.swift in Sources */,

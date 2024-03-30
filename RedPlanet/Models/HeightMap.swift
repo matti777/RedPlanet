@@ -296,9 +296,9 @@ final class HeightMap {
         let startTime3 = CFAbsoluteTimeGetCurrent()
 
         let entity = ModelEntity()
-        entity.components.set(ModelComponent(mesh: try .generateFrom(name: HeightMap.heightMapModelName, positions: positions, normals: vertexNormals, uvs: uvs, indices: indices), materials: [SimpleMaterial()]))
+        entity.components.set(ModelComponent(mesh: try .generateFrom(name: HeightMap.heightMapModelName, positions: positions, normals: vertexNormals, uvs: uvs, indices: indices), materials: []))
 
-        entity.components.set(HeightMapComponent(mapSize: mapSize, xzScale: xzScale, geometryMinY: yMinPos, geometryMaxY: yMaxPos, positions: positions))
+        entity.components.set(HeightMapComponent(numVertices: numVertices, numFaces: numFaces, mapSize: mapSize, xzScale: xzScale, geometryMinY: yMinPos, geometryMaxY: yMaxPos, positions: positions))
         
         log.debug("entity creation took \(CFAbsoluteTimeGetCurrent() - startTime3)")
 
@@ -441,6 +441,8 @@ final class HeightMap {
 
 /// Used to attach heightmap metadata into the generated terrain ModelEntity.
 struct HeightMapComponent: Component, Equatable, Codable {
+    let numVertices: Int
+    let numFaces: Int
     let mapSize: Int
     let xzScale: Float
     let geometryMinY: Float
