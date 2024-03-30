@@ -17,27 +17,27 @@ def Xform "Root"
             colorSpace = "srgb_texture"
             customData = {
                 dictionary realitykit = {
-                    float2 positionInSubgraph = (-62.66353, -169.69447)
+                    float2 positionInSubgraph = (-92.67897, -67.04862)
                     float2 sizeInSubgraph = (179, 53)
-                    int stackingOrderInSubgraph = 556
+                    int stackingOrderInSubgraph = 627
                 }
             }
         )
         float inputs:DistanceFogFarDistance = -0.36 (
             customData = {
                 dictionary realitykit = {
-                    float2 positionInSubgraph = (-77.991516, -96.123566)
+                    float2 positionInSubgraph = (-108.00696, 6.5222836)
                     float2 sizeInSubgraph = (219.5, 53)
-                    int stackingOrderInSubgraph = 554
+                    int stackingOrderInSubgraph = 627
                 }
             }
         )
         float inputs:DistanceFogThickness = 0.9 (
             customData = {
                 dictionary realitykit = {
-                    float2 positionInSubgraph = (-87.19531, -24.773438)
+                    float2 positionInSubgraph = (-117.210754, 77.87241)
                     float2 sizeInSubgraph = (209, 53)
-                    int stackingOrderInSubgraph = 540
+                    int stackingOrderInSubgraph = 627
                 }
             }
         )
@@ -279,9 +279,9 @@ def Xform "Root"
             color3f inputs:in1.connect = </Root/TerrainMaterial/Mix.outputs:out>
             float inputs:in2.connect = </Root/TerrainMaterial/Light_Angle.outputs:AngleFactor>
             color3f outputs:out
-            float2 ui:nodegraph:node:pos = (-33.445312, 39.86328)
+            float2 ui:nodegraph:node:pos = (-16.56896, 136.85959)
             float2 ui:nodegraph:node:size = (60, 36)
-            int ui:nodegraph:node:stackingOrder = 557
+            int ui:nodegraph:node:stackingOrder = 563
         }
 
         def Shader "Stone_Texture"
@@ -294,9 +294,9 @@ def Xform "Root"
             string inputs:uaddressmode
             string inputs:vaddressmode
             color3f outputs:out
-            float2 ui:nodegraph:node:pos = (-474.9545, 427.5003)
+            float2 ui:nodegraph:node:pos = (-474.71997, 404.18597)
             float2 ui:nodegraph:node:size = (148.5, 199)
-            int ui:nodegraph:node:stackingOrder = 443
+            int ui:nodegraph:node:stackingOrder = 625
         }
 
         def Shader "Mix"

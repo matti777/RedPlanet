@@ -2,6 +2,8 @@
 
 A small demo application for RealityKit2 / VisionOS that demostrates geometry generated in code as well as the use of custom materials using [ShaderGraphMaterial](https://developer.apple.com/documentation/realitykit/shadergraphmaterial).
 
+<img src="documentation/simulator_screenshot1.jpg" width="1000">
+
 # Terrain generation
 
 The terrain is generated using the classic [Diamond-Square](https://en.wikipedia.org/wiki/Diamond-square_algorithm) algorithm.
@@ -15,6 +17,8 @@ For a nice Shader Graph primer, see [this WWDC video](https://developer.apple.co
 For the reference on all the supported node types, see [this page](https://developer.apple.com/documentation/shadergraph/).
 
 NOTE: there seems to be a weird issue with these shader materials created in a an USDx file; their textures _will not work_ in your app unless you create a dummy object in the USDx file (in Reality Composer Pro) _and bind your material_ to it! (Situation Xcode 15.3 Beta). You don't need to use the dummy object, it just needs to be there in the scene file and have your texture bound to it and then you can use your texture for whatever.
+
+<img src="documentation/terrainmaterial_shadergraph.jpg" width="1000">
 
 ## Shader Basic Steps
 
@@ -43,6 +47,12 @@ Where:
 ## Disabling default scene lighting
 
 To disable the default scene lighting, an Image Based Lighting component is used. The terrain material handles its own lighting based on the light source position.
+
+# Geometry Instancing
+
+The dead trees scattered around the terrain in the application are rendered through [Geometry Instacing](https://en.wikipedia.org/wiki/Geometry_instancing).
+
+In RealityKit, geometry instancing is available through [MeshResource.Contents](https://developer.apple.com/documentation/realitykit/meshresource/contents-swift.struct) API.
 
 # License
 
