@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		494C23992BB3585F002091F1 /* GeometryMath.swift in Sources */ = {isa = PBXBuildFile; fileRef = 494C23982BB3585F002091F1 /* GeometryMath.swift */; };
 		4967118E2B77884800F3337E /* RealityKitContent in Frameworks */ = {isa = PBXBuildFile; productRef = 4967118D2B77884800F3337E /* RealityKitContent */; };
 		496711902B77884800F3337E /* RedPlanetApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4967118F2B77884800F3337E /* RedPlanetApp.swift */; };
 		496711982B77884900F3337E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 496711972B77884900F3337E /* Assets.xcassets */; };
@@ -30,6 +31,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		494C23982BB3585F002091F1 /* GeometryMath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeometryMath.swift; sourceTree = "<group>"; };
 		496711882B77884800F3337E /* RedPlanet.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RedPlanet.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		4967118C2B77884800F3337E /* RealityKitContent */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = RealityKitContent; sourceTree = "<group>"; };
 		4967118F2B77884800F3337E /* RedPlanetApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RedPlanetApp.swift; sourceTree = "<group>"; };
@@ -65,6 +67,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		494C23972BB35842002091F1 /* Util */ = {
+			isa = PBXGroup;
+			children = (
+				494C23982BB3585F002091F1 /* GeometryMath.swift */,
+			);
+			path = Util;
+			sourceTree = "<group>";
+		};
 		4967117F2B77884800F3337E = {
 			isa = PBXGroup;
 			children = (
@@ -91,6 +101,7 @@
 				4967118F2B77884800F3337E /* RedPlanetApp.swift */,
 				496711AF2B7788B800F3337E /* Views */,
 				496711B22B7788E600F3337E /* Models */,
+				494C23972BB35842002091F1 /* Util */,
 				496711B32B7788EB00F3337E /* Extensions */,
 				496711972B77884900F3337E /* Assets.xcassets */,
 				4967119C2B77884900F3337E /* Info.plist */,
@@ -255,6 +266,7 @@
 				496711902B77884800F3337E /* RedPlanetApp.swift in Sources */,
 				496711B72B77890300F3337E /* MeshResourceExtensions.swift in Sources */,
 				49FA16DC2BA8DF6B007B85C0 /* CollisionBox.swift in Sources */,
+				494C23992BB3585F002091F1 /* GeometryMath.swift in Sources */,
 				496711B52B7788F900F3337E /* HeightMap.swift in Sources */,
 				496711B12B7788CB00F3337E /* MainView.swift in Sources */,
 				49FA16DA2BA8DF18007B85C0 /* UIColorExtensions.swift in Sources */,

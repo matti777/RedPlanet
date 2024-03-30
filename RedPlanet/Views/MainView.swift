@@ -9,6 +9,7 @@ import SwiftUI
 import RealityKit
 import RealityKitContent
 import ARKit
+import GameplayKit
 
 struct MainView: View {
     private let arkitSession = ARKitSession()
@@ -24,7 +25,6 @@ struct MainView: View {
     private let lightDirectionVector: SIMD3<Float> = [0.4, 0.5, -0.8]
 
     /// Color for the distance fog
-//    private let distanceFogColor = UIColor(red: 0, green: 0, blue: 0)
     private let distanceFogColor = UIColor(red: 230, green: 230, blue: 230)
 
     /// Distance after which the geometry is no longer rendered
@@ -32,30 +32,31 @@ struct MainView: View {
 
     /// Distance fog thickness factor. Given the fog factor equation f = e(-d * t) where t is the thickness
     /// and d is the distance (from the camera), a value of t = 0.03 gives almost full fog at d = 100.0
-    private let distanceFogThickness: Float = 0.004
+    private let distanceFogThickness: Float = 0.0045
+    
+    /// Number of trees in the instance
+    private let numberOfTrees = 750
     
     /// Controls the movement speed
-    private let movementSpeedMultiplier: Float = 0.00000001
-    
+    private let forwardMovementSpeedMultiplier: Float = 0.00000001
+    private let sidewaysMovementSpeedMultiplier: Float = 0.01
+
     /// Defines the width of the no-go area on the map (in normalized coordinates)
     private let normalizedPositionMargin: Float = 0.1
     
     /// Normalized position on the heightmap; start in the center (0.5, 0.5).
     @State private var normalizedPosition = SIMD2<Float>(0.5, 0.5)
 
-    var tap: some Gesture {
-        SpatialTapGesture()
-            .targetedToAnyEntity()
-            .onEnded { value in
-                log.debug("Tap gesture")
-            }
-    }
+    private var collisionBoxDragState = CollisionBoxDragState()
     
     var drag: some Gesture {
         DragGesture()
             .targetedToAnyEntity()
             .onChanged { value in
-                handleDragMovement(dragVelocity: value.velocity)
+                handleDragMovement(gestureValue: value)
+            }
+            .onEnded { _ in
+                collisionBoxDragState.dragEnded()
             }
     }
     
@@ -63,63 +64,134 @@ struct MainView: View {
         RealityView { content in
             content.add(createSkySphere())
             
+            // Create our height map + generate the terrain object from it
             let heightMap = try! HeightMap(size: heightMapSize, roughness: heightMapRoughness)
             let terrain = try! heightMap.createEntity(xzScale: heightMapXZScale, yScale: heightMapYScale, uvScale: heightMapUVScale)
 
-            var material = try! await ShaderGraphMaterial(named: "/Root/TerrainMaterial", from: "Scene.usda", in: realityKitContentBundle)
-            try! material.setParameter(name: "LightDirection", value: .simd3Float(lightDirectionVector))
-            try! material.setParameter(name: "DistanceFogColor", value: .color(distanceFogColor))
-            try! material.setParameter(name: "DistanceFogFarDistance", value: .float(distanceFogFarDistance))
-            try! material.setParameter(name: "DistanceFogThickness", value: .float(distanceFogThickness))
-
-            terrain.model!.materials = [material]
-            terrain.components.set(createIBLComponent())
+            var terrainMaterial = try! await ShaderGraphMaterial(named: "/Root/TerrainMaterial", from: "Scene.usda", in: realityKitContentBundle)
+            try! terrainMaterial.setParameter(name: "LightDirection", value: .simd3Float(lightDirectionVector))
+            try! terrainMaterial.setParameter(name: "DistanceFogColor", value: .color(distanceFogColor))
+            try! terrainMaterial.setParameter(name: "DistanceFogFarDistance", value: .float(distanceFogFarDistance))
+            try! terrainMaterial.setParameter(name: "DistanceFogThickness", value: .float(distanceFogThickness))
+            terrain.model!.materials = [terrainMaterial]
+            let iblComponent = createIBLComponent()
+            terrain.components.set(iblComponent)
             terrain.components.set(ImageBasedLightReceiverComponent(imageBasedLight: terrain))
-
             content.add(terrain)
+
+            // Add trees via instanced geometry
+            let trees = try! createTrees(heightmap: terrain.heightMap!)
+
+            var treeMaterial = try! await ShaderGraphMaterial(named: "/Root/TreeMaterial", from: "Scene.usda", in: realityKitContentBundle)
+            try! treeMaterial.setParameter(name: "LightDirection", value: .simd3Float(lightDirectionVector))
+            try! treeMaterial.setParameter(name: "DistanceFogColor", value: .color(distanceFogColor))
+            try! treeMaterial.setParameter(name: "DistanceFogFarDistance", value: .float(distanceFogFarDistance))
+            try! treeMaterial.setParameter(name: "DistanceFogThickness", value: .float(distanceFogThickness))
+            trees.model!.materials = [treeMaterial]
+            trees.components.set(iblComponent)
+            trees.components.set(ImageBasedLightReceiverComponent(imageBasedLight: terrain))
+            trees.components.set(GroundingShadowComponent(castsShadow: true))
+            terrain.addChild(trees)
+
+            // Finally, add a collision box that will receive our drag events
             content.add(CollisionBox())
         } update: { content in
             guard let terrain = content.entities.first(where: { entity in
                 entity.components.has(HeightMapComponent.self)
-            }) as? ModelEntity else {
+            }) as? ModelEntity, let heightmap = terrain.heightMap else {
                 log.error("no terrain entity")
                 return
             }
 
-            // Get the (Vision Pro) device ("camera" / head) world position so we can compensate for it
-            let deviceTransform = getDeviceTransform()!
-            let devicePosition = deviceTransform[3]
+            // Get the device ("camera" / head) world position so we can compensate for it
+            var devicePositionY: Float = 1.5
             
-            let terrainSurfacePoint = try! HeightMap.getTerrainSurfacePoint(at: normalizedPosition, entity: terrain)
+            if let deviceTransform = getDeviceTransform() {
+                devicePositionY = deviceTransform[3].y
+            }
+            
+            guard let terrainSurfacePoint = try? heightmap.getTerrainSurfacePoint(atNormalizedPosition: normalizedPosition) else {
+                log.error("Could not get surface point")
+                return
+            }
             
             // Simulate a "virtual camera" (eg. moving on the terrain) by translating the terrain by the
             // "virtual camera" position on the terrain
-            terrain.position = -terrainSurfacePoint
-            terrain.position.y += devicePosition.y - 0.8
+            let cameraLocation = SIMD3<Float>(terrainSurfacePoint.x, terrainSurfacePoint.y + devicePositionY, terrainSurfacePoint.z)
+            let cameraTransform = Transform(translation: cameraLocation)
+            terrain.transform = Transform(matrix: cameraTransform.matrix.inverse)
+//            terrain.position = -terrainSurfacePoint
+//            terrain.position.y += devicePositionY - 0.3
         }.onAppear {
             Task {
                 try! await arkitSession.run([worldTrackingProvider])
-                
-//                // TODO check if we need this
-//                for await update in worldTrackingProvider.anchorUpdates {
-//                    switch update.event {
-//                    case .added, .updated:
-//                        // Update the app's understanding of this world anchor.
-//                        print("Anchor position updated.")
-//                    case .removed:
-//                        // Remove content related to this anchor.
-//                        print("Anchor position now unknown.")
-//                    }
-//                }
             }
         }
         .gesture(drag)
-        .gesture(tap)
     }
     
     // MARK: Private methods
     
-    private func handleDragMovement(dragVelocity: CGSize) {
+    private func createTrees(heightmap: HeightMapComponent) throws -> ModelEntity {
+        let entity = try Entity.load(named: "Tree_trunk", in: realityKitContentBundle)
+        let modelEntity = entity.findEntity(named: "tree_trunk_model") as! ModelEntity
+        let modelName = modelEntity.name
+        
+        let random = GKRandomSource.sharedRandom()
+        var instances: [MeshResource.Instance] = []
+        
+        let treeBaseMaxY = heightmap.geometryMinY + ((heightmap.geometryMaxY - heightmap.geometryMinY) * 0.8)
+        
+        var treesAdded = 0
+        let startTime = CFAbsoluteTimeGetCurrent()
+
+        while treesAdded < numberOfTrees {
+            // Allocate a random location for the instance on the heightmap
+            let u = (random.nextUniform() * 0.9) + 0.05
+            let v = (random.nextUniform() * 0.9) + 0.05
+            let instanceLocation = SIMD2<Float>(u, v)
+            var surfacePoint = try heightmap.getTerrainSurfacePoint(atNormalizedPosition: instanceLocation)
+            
+            // Only place trees into valleys, aka the low parts of the heightmap
+            if surfacePoint.y > treeBaseMaxY {
+                continue
+            }
+            
+            // Sink the tree into the ground a little bit so its roots don't show
+            surfacePoint.y -= 0.1
+            
+            var instanceTransform = Transform(translation: surfacePoint)
+
+            // Introduce random rotation around y axis to each instance
+            let yawAngle = (random.nextUniform() - 0.5) * .pi
+            instanceTransform.rotation *= .init(angle: yawAngle, axis: [0, 1, 0])
+            
+            // Orientate the model upright
+            instanceTransform.rotation *= .init(angle: -.pi / 2, axis: [1, 0, 0])
+
+            // Add random scaling
+            let scale = 1.0 + (random.nextUniform() * 1.6)
+            instanceTransform.scale = [scale, scale, scale]
+            
+            // Construct an instance of the model
+            instances.append(.init(id: "\(modelName)-\(treesAdded)", model: modelName, at: instanceTransform.matrix))
+            treesAdded += 1
+        }
+
+        // Create a model with a single mesh and multiple instances
+        var resourceContents = MeshResource.Contents()
+        resourceContents.instances = .init(instances)
+        resourceContents.models = modelEntity.model!.mesh.contents.models
+        resourceContents.skeletons = modelEntity.model!.mesh.contents.skeletons
+        let meshResource = try MeshResource.generate(from: resourceContents)
+        let model = ModelEntity(mesh: meshResource, materials: modelEntity.model!.materials)
+        log.debug("Created trees with \(model.model!.mesh.contents.instances.count) instances")
+        log.debug("Tree instance creation took \(CFAbsoluteTimeGetCurrent() - startTime)")
+
+        return model
+    }
+    
+    private func handleDragMovement(gestureValue: EntityTargetValue<DragGesture.Value>) {
         guard let deviceTransform = getDeviceTransform() else {
             log.error("Device transform not available!")
             return
@@ -127,16 +199,22 @@ struct MainView: View {
         
         // Use the device forward / right vectors to move around.
         // We start by projecting them onto the XZ plane and normalizing them.
-        let deviceForwardVector = deviceTransform[2]
         let deviceRightVector = deviceTransform[0]
+        let deviceForwardVector = deviceTransform[2]
         let forward = normalize(SIMD2<Float>(deviceForwardVector.x, deviceForwardVector.z))
         let right = normalize(SIMD2<Float>(deviceRightVector.x, deviceRightVector.z))
+        
+        // Horizontal drag amount cannot be taken from dragVelocity since its sign will change
+        // depending on the orientation.
+        let horizontalDragAmount = collisionBoxDragState.dragChange(dragGestureValue: gestureValue, deviceTransform: deviceTransform)
+
+        let dragVelocity = gestureValue.velocity
         
         // Calculate new position from forward vector multiplied by vertical drag amount plus
         // the right vector multiplied by the horizontal drag amount.
         var newPosition = normalizedPosition
-        newPosition += forward * (Float(-dragVelocity.height) * movementSpeedMultiplier)
-        newPosition += right * (Float(-dragVelocity.width) * movementSpeedMultiplier)
+        newPosition += forward * (Float(-dragVelocity.height) * forwardMovementSpeedMultiplier)
+        newPosition += right * horizontalDragAmount * sidewaysMovementSpeedMultiplier
         
         // Limit the position to certain margins
         if newPosition.x < normalizedPositionMargin {
@@ -197,12 +275,57 @@ struct MainView: View {
         
         // Rotate the sky so that the star (light source) is in the desired position in the sky
         skySphere.orientation *= simd_quatf(angle: Float(Angle(degrees: 30).radians), axis: [1, 0, 0])
-        skySphere.orientation *= simd_quatf(angle: Float(Angle(degrees: 160).radians), axis: [0, 1, 0])
+        skySphere.orientation *= simd_quatf(angle: Float(Angle(degrees: 150).radians), axis: [0, 1, 0])
 
         // Trick to flip vertex normals on the generated geometry so we can display
         // our image / video on the inside of the sphere
         skySphere.scale = .init(x: 1, y: 1, z: -1)
         
         return skySphere
+    }
+}
+
+/// Handles the horizontal dragging with a collision box that surrounds the user. The need for this class
+/// is that the horizontal drags cannot be handled via Value.velocity due to it yielding a different sign depending
+/// on orientation. So instead we are looking at the "rotation" around the user caused by the drag gesture and
+/// using that amount (angle updates in radians) as our horizontal drag amount.
+private final class CollisionBoxDragState {
+    private var prevLocation: Point3D?
+    
+    func dragChange(dragGestureValue: EntityTargetValue<DragGesture.Value>, deviceTransform: simd_float4x4) -> Float {
+        if prevLocation == nil {
+            // No drag active; start new one
+            prevLocation = dragGestureValue.startLocation3D
+        }
+        
+        // Calculate (yaw) rotation around device position in 2D space (set y = 0), as defined by the angle between
+        // vectors device -> prevLocation and device -> current location.
+        let prev = SIMD3<Float>(Float(prevLocation!.x), 0, Float(prevLocation!.z))
+        let current = SIMD3<Float>(Float(dragGestureValue.location3D.x), 0, Float(dragGestureValue.location3D.z))
+        let devicePosition = deviceTransform[3]
+        let device = SIMD3<Float>(devicePosition.x, 0, devicePosition.z)
+        let a = prev - device
+        let b = current - device
+        let len = (length(a) * length(b))
+
+        prevLocation = dragGestureValue.location3D
+        
+        // If the combined lengths is zero, the division will yield NaN so in that case we'll just use 0
+        if len <= 0.0001 {
+            return 0.0
+        }
+        
+        let angleInRadians = acos(dot(a, b) / len)
+        if angleInRadians.isNaN {
+            return 0.0
+        }
+        
+        let sign: Float = cross(a, b).y < 0 ? -1.0 : 1.0
+        
+        return angleInRadians * sign
+    }
+    
+    func dragEnded() {
+        prevLocation = nil
     }
 }
