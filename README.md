@@ -1,8 +1,15 @@
 # Red Planet
 
-A small demo application for RealityKit2 / VisionOS that demostrates geometry generated in code as well as the use of custom materials using [ShaderGraphMaterial](https://developer.apple.com/documentation/realitykit/shadergraphmaterial).
+A small tech demo application for RealityKit2 / VisionOS that demostrates and makes use of:
 
+- procedural geometry aka. geometry generated in code
+- custom materials using [ShaderGraphMaterial](https://developer.apple.com/documentation/realitykit/shadergraphmaterial).
+- geometry instancing
+
+<br>
 <img src="documentation/simulator_screenshot1.jpg" width="1000">
+<br>
+<br>
 
 # Terrain generation
 
@@ -37,7 +44,7 @@ Where:
 
 | Symbol | Meaning                                  |
 | ------ | ---------------------------------------- |
-| f      | fogginess factor, temporary value        |
+| f      | fogginess factor, an intermediate value  |
 | d      | fragment distance from the camera        |
 | t      | fog thickness factor, scalar (eg. 0.01)  |
 | c'     | output color                             |
@@ -50,7 +57,7 @@ To disable the default scene lighting, an Image Based Lighting component is used
 
 # Geometry Instancing
 
-The dead trees scattered around the terrain in the application are rendered through [Geometry Instacing](https://en.wikipedia.org/wiki/Geometry_instancing).
+The dead trees scattered around the terrain in the application are rendered through [Geometry Instancing](https://en.wikipedia.org/wiki/Geometry_instancing).
 
 In RealityKit, geometry instancing is available through [MeshResource.Contents](https://developer.apple.com/documentation/realitykit/meshresource/contents-swift.struct) API.
 
