@@ -22,7 +22,7 @@ struct MainView: View {
     private let heightMapUVScale: Float = 150.0
     
     /// Direction to the light source
-    private let lightDirectionVector: SIMD3<Float> = [1.0, 0.5, -0.8]
+    private let lightDirectionVector: SIMD3<Float> = [0.4, 0.5, -0.8]
 
     /// Color for the distance fog
     private let distanceFogColor = UIColor(red: 230, green: 230, blue: 230)
@@ -32,25 +32,31 @@ struct MainView: View {
 
     /// Distance fog thickness factor. Given the fog factor equation f = e(-d * t) where t is the thickness
     /// and d is the distance (from the camera), a value of t = 0.03 gives almost full fog at d = 100.0
-    private let distanceFogThickness: Float = 0.004
+    private let distanceFogThickness: Float = 0.0045
     
     /// Number of trees in the instance
-    private let numberOfTrees = 1000
+    private let numberOfTrees = 750
     
     /// Controls the movement speed
-    private let movementSpeedMultiplier: Float = 0.00000001
-    
+    private let forwardMovementSpeedMultiplier: Float = 0.00000001
+    private let sidewaysMovementSpeedMultiplier: Float = 0.01
+
     /// Defines the width of the no-go area on the map (in normalized coordinates)
     private let normalizedPositionMargin: Float = 0.1
     
     /// Normalized position on the heightmap; start in the center (0.5, 0.5).
     @State private var normalizedPosition = SIMD2<Float>(0.5, 0.5)
 
+    private var collisionBoxDragState = CollisionBoxDragState()
+    
     var drag: some Gesture {
         DragGesture()
             .targetedToAnyEntity()
             .onChanged { value in
-                handleDragMovement(dragVelocity: value.velocity)
+                handleDragMovement(gestureValue: value)
+            }
+            .onEnded { _ in
+                collisionBoxDragState.dragEnded()
             }
     }
     
@@ -67,9 +73,9 @@ struct MainView: View {
             try! terrainMaterial.setParameter(name: "DistanceFogColor", value: .color(distanceFogColor))
             try! terrainMaterial.setParameter(name: "DistanceFogFarDistance", value: .float(distanceFogFarDistance))
             try! terrainMaterial.setParameter(name: "DistanceFogThickness", value: .float(distanceFogThickness))
-
             terrain.model!.materials = [terrainMaterial]
-            terrain.components.set(createIBLComponent())
+            let iblComponent = createIBLComponent()
+            terrain.components.set(iblComponent)
             terrain.components.set(ImageBasedLightReceiverComponent(imageBasedLight: terrain))
             content.add(terrain)
 
@@ -81,6 +87,10 @@ struct MainView: View {
             try! treeMaterial.setParameter(name: "DistanceFogColor", value: .color(distanceFogColor))
             try! treeMaterial.setParameter(name: "DistanceFogFarDistance", value: .float(distanceFogFarDistance))
             try! treeMaterial.setParameter(name: "DistanceFogThickness", value: .float(distanceFogThickness))
+            trees.model!.materials = [treeMaterial]
+            trees.components.set(iblComponent)
+            trees.components.set(ImageBasedLightReceiverComponent(imageBasedLight: terrain))
+            trees.components.set(GroundingShadowComponent(castsShadow: true))
             terrain.addChild(trees)
 
             // Finally, add a collision box that will receive our drag events
@@ -94,15 +104,24 @@ struct MainView: View {
             }
 
             // Get the device ("camera" / head) world position so we can compensate for it
-            let deviceTransform = getDeviceTransform()!
-            let devicePosition = deviceTransform[3]
+            var devicePositionY: Float = 1.5
             
-            let terrainSurfacePoint = try! heightmap.getTerrainSurfacePoint(atNormalizedPosition: normalizedPosition)
+            if let deviceTransform = getDeviceTransform() {
+                devicePositionY = deviceTransform[3].y
+            }
+            
+            guard let terrainSurfacePoint = try? heightmap.getTerrainSurfacePoint(atNormalizedPosition: normalizedPosition) else {
+                log.error("Could not get surface point")
+                return
+            }
             
             // Simulate a "virtual camera" (eg. moving on the terrain) by translating the terrain by the
             // "virtual camera" position on the terrain
-            terrain.position = -terrainSurfacePoint
-            terrain.position.y += devicePosition.y - 0.8
+            let cameraLocation = SIMD3<Float>(terrainSurfacePoint.x, terrainSurfacePoint.y + devicePositionY, terrainSurfacePoint.z)
+            let cameraTransform = Transform(translation: cameraLocation)
+            terrain.transform = Transform(matrix: cameraTransform.matrix.inverse)
+//            terrain.position = -terrainSurfacePoint
+//            terrain.position.y += devicePositionY - 0.3
         }.onAppear {
             Task {
                 try! await arkitSession.run([worldTrackingProvider])
@@ -113,7 +132,7 @@ struct MainView: View {
     
     // MARK: Private methods
     
-    private func createTrees(heightmap: HeightMapComponent) throws -> Entity {
+    private func createTrees(heightmap: HeightMapComponent) throws -> ModelEntity {
         let entity = try Entity.load(named: "Tree_trunk", in: realityKitContentBundle)
         let modelEntity = entity.findEntity(named: "tree_trunk_model") as! ModelEntity
         let modelName = modelEntity.name
@@ -121,7 +140,7 @@ struct MainView: View {
         let random = GKRandomSource.sharedRandom()
         var instances: [MeshResource.Instance] = []
         
-        let treeBaseMaxY = heightmap.geometryMinY + ((heightmap.geometryMaxY - heightmap.geometryMinY) * 0.6)
+        let treeBaseMaxY = heightmap.geometryMinY + ((heightmap.geometryMaxY - heightmap.geometryMinY) * 0.8)
         
         var treesAdded = 0
         let startTime = CFAbsoluteTimeGetCurrent()
@@ -172,7 +191,7 @@ struct MainView: View {
         return model
     }
     
-    private func handleDragMovement(dragVelocity: CGSize) {
+    private func handleDragMovement(gestureValue: EntityTargetValue<DragGesture.Value>) {
         guard let deviceTransform = getDeviceTransform() else {
             log.error("Device transform not available!")
             return
@@ -180,16 +199,22 @@ struct MainView: View {
         
         // Use the device forward / right vectors to move around.
         // We start by projecting them onto the XZ plane and normalizing them.
-        let deviceForwardVector = deviceTransform[2]
         let deviceRightVector = deviceTransform[0]
+        let deviceForwardVector = deviceTransform[2]
         let forward = normalize(SIMD2<Float>(deviceForwardVector.x, deviceForwardVector.z))
         let right = normalize(SIMD2<Float>(deviceRightVector.x, deviceRightVector.z))
+        
+        // Horizontal drag amount cannot be taken from dragVelocity since its sign will change
+        // depending on the orientation.
+        let horizontalDragAmount = collisionBoxDragState.dragChange(dragGestureValue: gestureValue, deviceTransform: deviceTransform)
+
+        let dragVelocity = gestureValue.velocity
         
         // Calculate new position from forward vector multiplied by vertical drag amount plus
         // the right vector multiplied by the horizontal drag amount.
         var newPosition = normalizedPosition
-        newPosition += forward * (Float(-dragVelocity.height) * movementSpeedMultiplier)
-        newPosition += right * (Float(-dragVelocity.width) * movementSpeedMultiplier)
+        newPosition += forward * (Float(-dragVelocity.height) * forwardMovementSpeedMultiplier)
+        newPosition += right * horizontalDragAmount * sidewaysMovementSpeedMultiplier
         
         // Limit the position to certain margins
         if newPosition.x < normalizedPositionMargin {
@@ -257,5 +282,50 @@ struct MainView: View {
         skySphere.scale = .init(x: 1, y: 1, z: -1)
         
         return skySphere
+    }
+}
+
+/// Handles the horizontal dragging with a collision box that surrounds the user. The need for this class
+/// is that the horizontal drags cannot be handled via Value.velocity due to it yielding a different sign depending
+/// on orientation. So instead we are looking at the "rotation" around the user caused by the drag gesture and
+/// using that amount (angle updates in radians) as our horizontal drag amount.
+private final class CollisionBoxDragState {
+    private var prevLocation: Point3D?
+    
+    func dragChange(dragGestureValue: EntityTargetValue<DragGesture.Value>, deviceTransform: simd_float4x4) -> Float {
+        if prevLocation == nil {
+            // No drag active; start new one
+            prevLocation = dragGestureValue.startLocation3D
+        }
+        
+        // Calculate (yaw) rotation around device position in 2D space (set y = 0), as defined by the angle between
+        // vectors device -> prevLocation and device -> current location.
+        let prev = SIMD3<Float>(Float(prevLocation!.x), 0, Float(prevLocation!.z))
+        let current = SIMD3<Float>(Float(dragGestureValue.location3D.x), 0, Float(dragGestureValue.location3D.z))
+        let devicePosition = deviceTransform[3]
+        let device = SIMD3<Float>(devicePosition.x, 0, devicePosition.z)
+        let a = prev - device
+        let b = current - device
+        let len = (length(a) * length(b))
+
+        prevLocation = dragGestureValue.location3D
+        
+        // If the combined lengths is zero, the division will yield NaN so in that case we'll just use 0
+        if len <= 0.0001 {
+            return 0.0
+        }
+        
+        let angleInRadians = acos(dot(a, b) / len)
+        if angleInRadians.isNaN {
+            return 0.0
+        }
+        
+        let sign: Float = cross(a, b).y < 0 ? -1.0 : 1.0
+        
+        return angleInRadians * sign
+    }
+    
+    func dragEnded() {
+        prevLocation = nil
     }
 }

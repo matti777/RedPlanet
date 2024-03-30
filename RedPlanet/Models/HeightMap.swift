@@ -457,6 +457,10 @@ extension ModelEntity {
 extension HeightMapComponent {
     /// Finds the geometry polygon at the normalized position ([0..1, 0..1])
     func getTerrainPolygon(at normalizedPosition: SIMD2<Float>) throws -> Triangle {
+        if normalizedPosition.x.isNaN || normalizedPosition.y.isNaN {
+            throw HeightMap.Error.invalidArgument(message: "Supplied a NaN argument")
+        }
+        
         if normalizedPosition.x <= 0 || normalizedPosition.x >= 1 ||
             normalizedPosition.y <= 0 || normalizedPosition.y >= 1 {
             log.error("invalid normalizedPosition: \(normalizedPosition)")
