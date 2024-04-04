@@ -74,7 +74,11 @@ struct MainView: View {
             content.add(createSkySphere())
             
             if let attachment = attachments.entity(for: "info_attachment") {
-                attachment.position = [0, 1, -0.5]
+                attachment.position = [0, 1, -0.8]
+                if let deviceTransform = getDeviceTransform() {
+                    attachment.position.y = deviceTransform[3].y
+                }
+
                 content.add(attachment)
             }
             
@@ -284,6 +288,11 @@ struct MainView: View {
         }
         if newPosition.y > (1.0 - normalizedPositionMargin) {
             newPosition.y = (1.0 - normalizedPositionMargin)
+        }
+        
+        if newPosition.x.isNaN || newPosition.y.isNaN {
+            // Safeguard
+            return
         }
         
         // Update the position state variable
